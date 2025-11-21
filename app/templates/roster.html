@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clan War Command</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='icons/roster_icon.png') }}">
+</head>
+<body>
+
+    <!-- NAV BAR -->
+    <nav class="nav-bar">
+        <a href="{{ url_for('main.roster') }}" class="nav-item active">
+            <img src="{{ url_for('static', filename='icons/roster_icon.png') }}" class="icon" onerror="this.style.display='none'"> Roster
+        </a>
+        <a href="{{ url_for('main.war_room') }}" class="nav-item">
+            <img src="{{ url_for('static', filename='icons/swords_icon.png') }}" class="icon" onerror="this.style.display='none'"> War Room
+        </a>
+    </nav>
+
+    <!-- HERO HEADER -->
+    <div class="hero-banner">
+        <div class="hero-content">
+            <h1>CLAN ROSTER</h1>
+            <p>Performance Tracking & War Eligibility</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="roster-grid">
+            <!-- TABLE HEADERS -->
+            <div class="header-row">
+                <div class="col-rank">#</div>
+                <div class="col-th">TH</div>
+                <div class="col-name">Player</div>
+                <div class="col-activity">Donations</div>
+                <div class="col-perf">Participation</div>
+                <div class="col-score">Score</div>
+                <div class="col-status">Status</div>
+            </div>
+
+            <!-- PLAYER CARDS -->
+            {% for player in players %}
+            <div class="player-card {{ player.status_class }}">
+
+                <div class="col-rank">#{{ loop.index }}</div>
+
+                <div class="col-th">
+                    <div class="th-badge">
+                        <img src="{{ url_for('static', filename='town_halls/Town_Hall' + player.th|string + '.webp') }}"
+                             class="th-img" width="50" height="50"
+                             onerror="this.style.display='none'">
+                        <span>{{ player.th }}</span>
+                    </div>
+                </div>
+
+                <div class="col-name">
+                    <a href="{{ player.link }}" class="player-link">
+                        {{ player.name }}
+                        <span class="tag">{{ player.tag }}</span>
+                    </a>
+                </div>
+
+                <!-- ACTIVITY (DONATIONS) -->
+                <div class="col-activity">
+                    <div class="data-group">
+                        <span class="data-label">DONATED</span>
+                        <span class="data-value green">{{ player.donated }}</span>
+                    </div>
+                    <div class="data-group">
+                        <span class="data-label">RECEIVED</span>
+                        <span class="data-value">{{ player.received }}</span>
+                    </div>
+                </div>
+
+                <!-- WAR PARTICIPATION -->
+                <div class="col-perf">
+                    <div class="data-group">
+                        <span class="data-label">ATTACKS</span>
+                        <span class="data-value bold">{{ player.participation }}</span>
+                    </div>
+                </div>
+
+                <!-- SCORE -->
+                <div class="col-score">
+                    <div class="score-bubble">{{ player.score }}</div>
+                </div>
+
+                <!-- STATUS BADGE -->
+                <div class="col-status">
+                    <span class="status-badge">{{ player.status }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</body>
+</html>

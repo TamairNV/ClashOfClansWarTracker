@@ -1,0 +1,6 @@
+pymysql
+coc.py
+asyncio
+cryptography
+waitress
+flask

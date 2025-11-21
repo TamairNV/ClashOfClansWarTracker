@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Flask App{% endblock %}</title>
+    <script src="https://cdn.simplecss.org/simple.min.css"></script>
+</head>
+<body>
+    <header>
+        <h1>Flask</h1>
+    </header>
+
+    <main>
+        {% block content %}
+        <!-- Page-specific content will go here -->
+        {% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; Tamer Vassib</p>
+    </footer>
+</body>
+</html>

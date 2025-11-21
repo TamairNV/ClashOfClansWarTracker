@@ -1,0 +1,73 @@
+-- 1. Create the database (if you haven't already)
+CREATE DATABASE IF NOT EXISTS clash_manager;
+USE clash_manager;
+
+-- 2. The Players Table
+-- Stores profile info and the critical donation data for tracking activity.
+CREATE TABLE IF NOT EXISTS players (
+    player_tag VARCHAR(15) PRIMARY KEY,     -- The unique hash tag (e.g., #2ABC)
+    name VARCHAR(50) NOT NULL,
+    town_hall_level INT NOT NULL,
+    is_in_clan BOOLEAN DEFAULT TRUE,        -- TRUE = Currently in clan, FALSE = Left
+
+    -- Activity Tracking
+    last_known_donations INT DEFAULT 0,     -- Used to compare against API
+    last_known_received INT DEFAULT 0,      -- Helpful context
+    last_active_time DATETIME DEFAULT CURRENT_TIMESTAMP, -- The calculated "Heartbeat"
+
+    first_seen_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 3. The Wars Table
+-- Stores the high-level info about the war itself.
+CREATE TABLE IF NOT EXISTS wars (
+    war_id INT AUTO_INCREMENT PRIMARY KEY,  -- Internal ID for our app
+    opponent_name VARCHAR(50),
+    opponent_tag VARCHAR(15),
+    war_type ENUM('regular', 'cwl', 'friendly') DEFAULT 'regular',
+    state VARCHAR(20),                      -- e.g., 'preparation', 'inWar', 'warEnded'
+    start_time DATETIME,                    -- Critical for identifying the war
+    end_time DATETIME,
+
+    UNIQUE KEY unique_war (opponent_tag, start_time) -- Prevents duplicate wars
+);
+
+-- 4. The War Performance Table
+-- Links a specific player to a specific war.
+CREATE TABLE IF NOT EXISTS war_performance (
+    performance_id INT AUTO_INCREMENT PRIMARY KEY,
+    war_id INT,
+    player_tag VARCHAR(15),
+
+    -- Attack Stats
+    town_hall_at_time INT,             -- Their TH level during that specific war
+    stars INT DEFAULT 0,
+    destruction_percentage FLOAT DEFAULT 0.0,
+    attacks_used INT DEFAULT 0,        -- 0, 1, or 2
+
+    -- Timestamps (Requires polling to get accurate times)
+    attack_1_time DATETIME NULL,
+    attack_2_time DATETIME NULL,
+
+    -- Defense Stats
+    defense_stars INT DEFAULT 0,       -- How many stars the enemy got on them
+
+    FOREIGN KEY (war_id) REFERENCES wars(war_id) ON DELETE CASCADE,
+    FOREIGN KEY (player_tag) REFERENCES players(player_tag) ON DELETE CASCADE,
+
+    -- Ensure one entry per player per war
+    UNIQUE KEY unique_player_war (war_id, player_tag)
+);
+
+CREATE TABLE IF NOT EXISTS war_opponents (
+    opponent_tag VARCHAR(15),
+    war_id INT,
+    map_position INT,
+    town_hall_level INT,
+    stars INT DEFAULT 0,
+    destruction FLOAT DEFAULT 0.0,
+
+    PRIMARY KEY (war_id, opponent_tag),
+    FOREIGN KEY (war_id) REFERENCES wars(war_id) ON DELETE CASCADE
+);

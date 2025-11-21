@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Secure Flask Lab{% endblock %}
+
+{% block content %}
+    <h2>Welcome</h2>
+    <p>Please enter your name below:</p>
+
+    <form method="POST">
+    {{ form.hidden_tag() }}
+    <p>
+        {{ form.name.label }}<br>
+        {{ form.name(size=32) }}
+    </p>
+    <p>{{ form.submit() }}</p>
+    </form>
+
+{% if name %}
+    <p>Hello, <strong>{{ name }}</strong>!</p>
+{% endif %}
+
+{% endblock %}

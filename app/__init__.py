@@ -1,23 +1,31 @@
-import os
-
 from flask import Flask
 from flask_wtf.csrf import CSRFProtect
 from config import Config
-import coc
-import asyncio
 from dotenv import load_dotenv
+
+# Load environment variables
 load_dotenv()
 
 csrf = CSRFProtect()
-app = Flask(__name__)
-def create_app():
 
+
+def create_app():
+    # 1. Create Flask Instance
+    app = Flask(__name__)
+
+    # 2. Load Config
     app.config.from_object(Config)
 
+    # 3. Init Extensions
     csrf.init_app(app)
 
+    # 4. Register Blueprints
+    # We import here to avoid circular import issues
+    from app.routes import main
+    app.register_blueprint(main)
 
-    from app.routes import main_bp
-    app.register_blueprint(main_bp)
+    return app
 
-    return  app
+
+# This is the variable run_production.py looks for!
+app = create_app()

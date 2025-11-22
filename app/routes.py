@@ -3,7 +3,7 @@ from config import Config
 from Utils.sqlManager import SQLManager
 from Utils.war_strategy import get_war_recommendations
 
-main_bp = Blueprint('main', __name__)
+main = Blueprint('main', __name__)
 
 
 def get_status(score, wars_played):
@@ -18,7 +18,7 @@ def get_status(score, wars_played):
         return "BENCH", "status-bench"
 
 
-@main_bp.route('/')
+@main.route('/')
 def roster():
     db = SQLManager(Config.DB_HOST, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME)
 
@@ -68,7 +68,7 @@ def roster():
     return render_template('roster.html', players=roster_data)
 
 
-@main_bp.route('/war')
+@main.route('/war')
 def war_room():
     db = SQLManager(Config.DB_HOST, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME)
 

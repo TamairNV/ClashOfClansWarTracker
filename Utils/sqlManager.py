@@ -1,6 +1,8 @@
 import pymysql
 from pymysql.cursors import DictCursor
-from datetime import datetime
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 
 class SQLManager:
@@ -56,7 +58,6 @@ class SQLManager:
         return self.fetch_one(sql, (opponent_tag, start_time))
 
     def get_active_war(self):
-        """Finds the currently active war ID."""
         sql = "SELECT * FROM wars WHERE state IN ('inWar', 'preparation') ORDER BY start_time DESC LIMIT 1"
         return self.fetch_one(sql)
 
@@ -83,7 +84,6 @@ class SQLManager:
                            player_data['destruction'], player_data['attacks_used'], player_data['defense_stars']))
 
     def update_war_opponent(self, war_id, enemy_data):
-        """Saves info about a specific enemy base."""
         sql = """
             INSERT INTO war_opponents (war_id, opponent_tag, map_position, town_hall_level, stars, destruction)
             VALUES (%s, %s, %s, %s, %s, %s)
@@ -97,7 +97,12 @@ class SQLManager:
     def get_all_active_players(self):
         return self.fetch_all("SELECT * FROM players WHERE is_in_clan = TRUE")
 
+    def get_full_roster_including_leavers(self):
+        """Gets everyone, sorting active players first."""
+        return self.fetch_all("SELECT * FROM players ORDER BY is_in_clan DESC, trust_score DESC")
+
     def get_player_history(self, player_tag, limit=5):
+        # ONLY fetches ENDED wars to avoid active war penalties
         sql = """
             SELECT wp.*, w.start_time 
             FROM war_performance wp
@@ -143,8 +148,6 @@ class SQLManager:
     # --- STRATEGY DATA ---
 
     def get_full_war_map(self, war_id):
-        """Gets our team and their team for the strategy page."""
-        # Updated query to include 'p.trust_score as score'
         our_team = self.fetch_all("""
             SELECT p.name, wp.town_hall_at_time as th, wp.attacks_used, wp.player_tag, p.trust_score as score
             FROM war_performance wp

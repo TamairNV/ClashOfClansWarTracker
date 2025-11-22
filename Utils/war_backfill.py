@@ -2,6 +2,9 @@ import asyncio
 import coc
 from config import Config
 from sqlManager import SQLManager
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 
 async def main():

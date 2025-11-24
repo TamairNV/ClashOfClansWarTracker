@@ -1,36 +1,69 @@
-from config import Config
-from sqlManager import SQLManager
+
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from config import Config
+from sqlManager import SQLManager
 
 
 def calculate_trust_score(player_th, history):
-    MAX_TH = 18
+    # ==========================================
+    # ⚙️ TWEAK VARIABLES HERE
+    # ==========================================
+    MAX_TH = 18  # Current Max Town Hall level
+
+    # Weights (Must add up to 1.0)
+    W_RELIABILITY = 0.50  # 50% - Showing up to attack
+    W_SKILL = 0.15  # 30% - Getting stars
+    W_POWER = 0.35  # 20% - Base strength (TH level)
+
+    # Penalties & Boosts
+    PENALTY_PER_MISS = 15  # Points lost per missed attack (for high THs)
+    HIGH_TH_THRESHOLD = 14  # TH level where missing attacks gets punished
+
+    NEW_PLAYER_WARS = 1  # How many wars count as "New"
+    NEW_PLAYER_BOOST = 82.0  # Minimum score for a new player with 100% attendance
+    # ==========================================
+
+    # 1. Power Score Calculation
     power_score = (player_th / MAX_TH) * 100
 
+    # Handle players with NO history
     if not history:
-        return round((50 * 0.8) + (power_score * 0.2), 1)
+        # Assume average (50) for skill/reliability, use actual power
+        # Logic: (50 * 80%) + (Power * 20%)
+        base_weight = W_RELIABILITY + W_SKILL
+        return round((50 * base_weight) + (power_score * W_POWER), 1)
 
+    # 2. Aggregate Data
     total_wars = len(history)
     total_possible_attacks = total_wars * 2
     attacks_made = sum(row['attacks_used'] for row in history)
     total_stars = sum(row['stars'] for row in history)
 
+    # 3. Reliability Score (0-100)
     reliability_score = (attacks_made / total_possible_attacks) * 100
+
+    # 4. Skill Score (0-100)
     avg_stars = total_stars / total_wars
     skill_score = (avg_stars / 6) * 100
 
-    final_score = (reliability_score * 0.50) + (skill_score * 0.30) + (power_score * 0.20)
+    # 5. Final Weighted Score
+    final_score = (reliability_score * W_RELIABILITY) + \
+                  (skill_score * W_SKILL) + \
+                  (power_score * W_POWER)
 
-    # New Player Boost
-    if total_wars <= 5 and attacks_made == total_possible_attacks:
-        final_score = max(final_score, 82.0)
+    # --- SPECIAL RULES ---
 
-    if player_th >= 13:
+    # New Player Boost (Protect good recruits from low sample size)
+    if total_wars <= NEW_PLAYER_WARS and attacks_made == total_possible_attacks:
+        final_score = max(final_score, NEW_PLAYER_BOOST)
+
+    # Elite Flake Penalty (Punish high THs who miss attacks)
+    if player_th >= HIGH_TH_THRESHOLD:
         missed_attacks = total_possible_attacks - attacks_made
         if missed_attacks > 0:
-            penalty = missed_attacks * 15
+            penalty = missed_attacks * PENALTY_PER_MISS
             final_score -= penalty
 
     return round(max(0, min(100, final_score)), 1)

@@ -1,11 +1,10 @@
 import asyncio
-import coc
-from config import Config
-from sqlManager import SQLManager
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
+import coc
+from config import Config
+from sqlManager import SQLManager
 
 async def main():
     db = SQLManager(Config.DB_HOST, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME)

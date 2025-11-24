@@ -44,7 +44,7 @@ last_run_times = {script: 0 for script in scripts_config}
 def run_script(script_path):
     try:
         print(f"--- Running {script_path} ---")
-        # subprocess.run(['python', script_path], check=True)
+        subprocess.run(['python', script_path], check=True)
         print(f"Finished {script_path}")
     except Exception as e:
         print(f"Error running {script_path}: {e}")

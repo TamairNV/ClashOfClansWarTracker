@@ -113,10 +113,6 @@ class SQLManager:
         return self.fetch_all(sql, (player_tag, limit))
 
     def update_trust_score(self, player_tag, score):
-        try:
-            self.execute("ALTER TABLE players ADD COLUMN trust_score FLOAT DEFAULT 0")
-        except:
-            pass
         self.execute("UPDATE players SET trust_score = %s WHERE player_tag = %s", (score, player_tag))
 
     def get_player(self, player_tag):

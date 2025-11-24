@@ -71,3 +71,5 @@ CREATE TABLE IF NOT EXISTS war_opponents (
     PRIMARY KEY (war_id, opponent_tag),
     FOREIGN KEY (war_id) REFERENCES wars(war_id) ON DELETE CASCADE
 );
+
+ALTER TABLE players ADD COLUMN trust_score FLOAT DEFAULT 0;

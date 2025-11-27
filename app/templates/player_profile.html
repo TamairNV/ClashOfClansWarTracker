@@ -15,62 +15,111 @@
         .profile-container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 20px;
+            padding: 10px;
+            /* Reduced padding for mobile default */
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Desktop override */
+        @media (min-width: 769px) {
+            .profile-container {
+                padding: 20px;
+                display: grid;
+                grid-template-columns: 1fr 2fr;
+                gap: 20px;
+            }
         }
 
         .profile-header {
             background: var(--card-bg);
             border-radius: 12px;
-            padding: 20px;
+            padding: 15px;
+            /* Reduced padding */
             display: flex;
+            flex-direction: column;
+            /* Mobile default */
             align-items: center;
-            gap: 20px;
-            margin-bottom: 20px;
+            gap: 15px;
+            margin-bottom: 0;
+            /* Let grid gap handle spacing */
             border: 1px solid #333;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        @media (min-width: 769px) {
+            .profile-header {
+                flex-direction: row;
+                text-align: left;
+                padding: 20px;
+                margin-bottom: 20px;
+            }
         }
 
         .th-large {
-            width: 100px;
-            height: 100px;
+            width: 80px;
+            /* Smaller for mobile */
+            height: 80px;
             object-fit: contain;
             filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.5));
+        }
+
+        @media (min-width: 769px) {
+            .th-large {
+                width: 100px;
+                height: 100px;
+            }
         }
 
         .profile-info h1 {
             margin: 0;
             font-family: 'Lilita One', cursive;
-            font-size: 2.5rem;
+            font-size: 1.8rem;
+            /* Smaller for mobile */
             color: var(--coc-yellow);
             text-shadow: 2px 2px 0 #000;
+            line-height: 1.1;
+        }
+
+        @media (min-width: 769px) {
+            .profile-info h1 {
+                font-size: 2.5rem;
+            }
         }
 
         .profile-tag {
             color: #aaa;
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-family: monospace;
         }
 
         .stat-card {
             background: var(--card-bg);
             border-radius: 10px;
-            padding: 15px;
+            padding: 10px;
+            /* Reduced padding */
             text-align: center;
             border: 1px solid #333;
         }
 
         .stat-value {
             font-family: 'Lilita One', cursive;
-            font-size: 2rem;
+            font-size: 1.5rem;
+            /* Smaller for mobile */
             color: var(--coc-yellow);
+        }
+
+        @media (min-width: 769px) {
+            .stat-value {
+                font-size: 2rem;
+            }
         }
 
         .stat-label {
             color: #888;
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
@@ -78,15 +127,29 @@
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
+            gap: 10px;
+            /* Reduced gap */
         }
 
         .chart-container {
             background: var(--card-bg);
             border-radius: 12px;
-            padding: 20px;
+            padding: 10px;
+            /* Reduced padding */
             border: 1px solid #333;
-            margin-top: 20px;
+            margin-top: 0;
+            /* Let grid gap handle spacing */
+            width: 100%;
+            /* Ensure it doesn't overflow */
+            overflow: hidden;
+            /* Clip content */
+        }
+
+        @media (min-width: 769px) {
+            .chart-container {
+                padding: 20px;
+                margin-top: 20px;
+            }
         }
 
         .history-table {
@@ -95,11 +158,14 @@
             background: var(--card-bg);
             border-radius: 12px;
             overflow: hidden;
+            font-size: 0.85rem;
+            /* Smaller font for mobile */
         }
 
         .history-table th,
         .history-table td {
-            padding: 12px 15px;
+            padding: 10px;
+            /* Reduced padding */
             text-align: left;
             border-bottom: 1px solid #333;
             color: #ddd;
@@ -110,38 +176,40 @@
             color: var(--coc-yellow);
             font-family: 'Lilita One', cursive;
             text-transform: uppercase;
+            font-size: 0.9rem;
         }
 
         .btn-game {
             background: var(--coc-yellow);
             color: #000;
-            padding: 10px 20px;
+            padding: 8px 16px;
             border-radius: 8px;
             text-decoration: none;
             font-weight: bold;
             font-family: 'Lilita One', cursive;
             display: inline-block;
-            margin-left: auto;
+            margin-top: 10px;
+            /* Mobile default */
             transition: 0.2s;
+            font-size: 0.9rem;
         }
 
-        .btn-game:hover {
-            background: var(--coc-orange);
-        }
-
-        @media (max-width: 768px) {
-            .profile-container {
-                grid-template-columns: 1fr;
-            }
-
-            .profile-header {
-                flex-direction: column;
-                text-align: center;
-            }
-
+        @media (min-width: 769px) {
             .btn-game {
-                margin: 10px auto 0;
+                margin-top: 0;
+                margin-left: auto;
+                padding: 10px 20px;
+                font-size: 1rem;
             }
+        }
+
+        /* Column Spacing */
+        .left-col,
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            /* Adds vertical space between boxes */
         }
     </style>
 </head>
@@ -301,8 +369,7 @@
                 labels: Array.from({ length: 24 }, (_, i) => i + 'h'),
                 datasets: [{
                     label: 'Activity Level',
-                    data: {{ activity_hours | tojson }
-        },
+                    data: {{ activity_hours | tojson }},
             backgroundColor: 'rgba(250, 204, 21, 0.2)',
             borderColor: '#facc15',
             pointBackgroundColor: '#facc15',

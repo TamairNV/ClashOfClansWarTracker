@@ -160,16 +160,17 @@ class SQLManager:
         )
 
     def get_player_war_stats(self, player_tag):
-        """Aggregates war statistics for a player."""
+        """Aggregates war statistics for a player, ONLY for ended wars."""
         sql = """
             SELECT 
                 COUNT(*) as total_wars,
-                SUM(stars) as total_stars,
-                AVG(destruction_percentage) as avg_destruction,
-                SUM(attacks_used) as total_attacks,
-                SUM(CASE WHEN attacks_used = 0 THEN 1 ELSE 0 END) as missed_attacks
-            FROM war_performance
-            WHERE player_tag = %s
+                SUM(wp.stars) as total_stars,
+                AVG(wp.destruction_percentage) as avg_destruction,
+                SUM(wp.attacks_used) as total_attacks,
+                SUM(CASE WHEN wp.attacks_used = 0 THEN 1 ELSE 0 END) as missed_attacks
+            FROM war_performance wp
+            JOIN wars w ON wp.war_id = w.war_id
+            WHERE wp.player_tag = %s AND w.state = 'warEnded'
         """
         return self.fetch_one(sql, (player_tag,))
 

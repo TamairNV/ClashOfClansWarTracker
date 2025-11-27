@@ -36,14 +36,25 @@ async def main():
 
             for member in war.clan.members:
                 attacks_used = len(member.attacks)
+                # Update Summary
                 total_stars = sum(a.stars for a in member.attacks)
-                # Calculate Average Destruction instead of Best
                 avg_destruction = sum(a.destruction for a in member.attacks) / attacks_used if attacks_used > 0 else 0
                 defense_stars = member.best_opponent_attack.stars if member.best_opponent_attack else 0
                 player_data = {'tag': member.tag, 'town_hall': member.town_hall, 'stars': total_stars,
                                'destruction': avg_destruction, 'attacks_used': attacks_used,
                                'defense_stars': defense_stars}
                 db.update_war_performance(war_id, player_data)
+
+                # Update Individual Attacks (Granular)
+                for i, attack in enumerate(member.attacks, 1):
+                    attack_data = {
+                        'stars': attack.stars,
+                        'destruction': attack.destruction,
+                        'order': i,
+                        'defender_tag': attack.defender_tag,
+                        'defender_th': attack.defender.town_hall if attack.defender else 0
+                    }
+                    db.update_war_attack(war_id, member.tag, attack_data)
 
             for member in war.opponent.members:
                 stars_surrendered = member.best_opponent_attack.stars if member.best_opponent_attack else 0

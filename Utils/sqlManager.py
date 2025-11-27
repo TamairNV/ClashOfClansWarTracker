@@ -159,15 +159,69 @@ class SQLManager:
             (player_tag, limit)
         )
 
+    def update_war_attack(self, war_id, player_tag, attack_data):
+        """Updates or inserts a single attack record."""
+        # attack_data = {'stars': int, 'destruction': float, 'order': int, 'defender_tag': str, 'defender_th': int}
+        sql = """
+            INSERT INTO war_attacks (war_id, player_tag, stars, destruction, attack_order, defender_tag, defender_th)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+            stars = VALUES(stars),
+            destruction = VALUES(destruction),
+            defender_th = VALUES(defender_th);
+        """
+        # Note: We don't have a unique key on (war_id, player_tag, attack_order) yet, 
+        # so we should probably add one or check existence. 
+        # For now, let's check if it exists to avoid duplicates.
+        
+        check_sql = "SELECT attack_id FROM war_attacks WHERE war_id=%s AND player_tag=%s AND attack_order=%s"
+        existing = self.fetch_one(check_sql, (war_id, player_tag, attack_data['order']))
+        
+        if existing:
+            update_sql = """
+                UPDATE war_attacks SET stars=%s, destruction=%s, defender_tag=%s, defender_th=%s
+                WHERE attack_id=%s
+            """
+            self.execute(update_sql, (attack_data['stars'], attack_data['destruction'], 
+                                      attack_data['defender_tag'], attack_data['defender_th'], existing['attack_id']))
+        else:
+            self.execute(sql, (war_id, player_tag, attack_data['stars'], attack_data['destruction'], 
+                               attack_data['order'], attack_data['defender_tag'], attack_data['defender_th']))
+
+    def get_player_attacks(self, player_tag, limit=50):
+        """Fetches individual attack history for a player."""
+        sql = """
+            SELECT wa.*, w.start_time, w.opponent_name
+            FROM war_attacks wa
+            JOIN wars w ON wa.war_id = w.war_id
+            WHERE wa.player_tag = %s
+            ORDER BY w.start_time DESC, wa.attack_order ASC
+            LIMIT %s
+        """
+        return self.fetch_all(sql, (player_tag, limit))
+
     def get_player_war_stats(self, player_tag):
         """Aggregates war statistics for a player, ONLY for ended wars."""
+        # Heuristic for Triple Rate from historical war_performance data:
+        # - 6 stars (2 attacks) -> 2 triples
+        # - 4 or 5 stars (2 attacks) -> 1 triple (must be 3+1 or 3+2)
+        # - 3 stars (1 attack) -> 1 triple
+        # - 3 stars (2 attacks) -> Assume 0 triples (conservative, could be 2+1)
         sql = """
             SELECT 
                 COUNT(*) as total_wars,
                 SUM(wp.stars) as total_stars,
                 AVG(wp.destruction_percentage) as avg_destruction,
                 SUM(wp.attacks_used) as total_attacks,
-                SUM(CASE WHEN wp.attacks_used = 0 THEN 1 ELSE 0 END) as missed_attacks
+                SUM(CASE WHEN wp.attacks_used = 0 THEN 1 ELSE 0 END) as missed_attacks,
+                SUM(
+                    CASE 
+                        WHEN wp.stars = 6 THEN 2
+                        WHEN wp.stars IN (4, 5) THEN 1
+                        WHEN wp.stars = 3 AND wp.attacks_used = 1 THEN 1
+                        ELSE 0 
+                    END
+                ) as estimated_triples
             FROM war_performance wp
             JOIN wars w ON wp.war_id = w.war_id
             WHERE wp.player_tag = %s AND w.state = 'warEnded'

@@ -206,9 +206,9 @@
                         war_stats.avg_destruction else 0 }}%</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Hit Rate</div>
+                    <div class="stat-label">Triple Rate</div>
                     <div class="stat-value" style="color: #4ade80;">
-                        {{ ((war_stats.total_stars / (war_stats.total_attacks * 3)) * 100)|round(0) if
+                        {{ ((war_stats.estimated_triples / war_stats.total_attacks) * 100)|round(0) if
                         war_stats.total_attacks else 0 }}%
                     </div>
                 </div>
@@ -265,12 +265,23 @@
                             <td style="color: #facc15; font-weight: bold;">{{ war.stars }} ★</td>
                             <td>{{ war.destruction_percentage }}%</td>
                             <td>
+                                {% if attacks_by_war.get(war.war_id) %}
+                                <div style="display: flex; flex-direction: column; gap: 2px;">
+                                    {% for attack in attacks_by_war[war.war_id] %}
+                                    <div style="font-size: 0.8rem;">
+                                        <span style="color: #facc15;">{{ "★" * attack.stars }}</span>
+                                        <span style="color: #aaa;">{{ attack.destruction }}%</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
                                 {% if war.attacks_used == 2 %}
                                 <span style="color: #4ade80;">2/2</span>
                                 {% elif war.attacks_used == 1 %}
                                 <span style="color: #facc15;">1/2</span>
                                 {% else %}
                                 <span style="color: #f87171;">0/2</span>
+                                {% endif %}
                                 {% endif %}
                             </td>
                         </tr>
@@ -290,7 +301,8 @@
                 labels: Array.from({ length: 24 }, (_, i) => i + 'h'),
                 datasets: [{
                     label: 'Activity Level',
-                    data: {{ activity_hours | tojson }},
+                    data: {{ activity_hours | tojson }
+        },
             backgroundColor: 'rgba(250, 204, 21, 0.2)',
             borderColor: '#facc15',
             pointBackgroundColor: '#facc15',

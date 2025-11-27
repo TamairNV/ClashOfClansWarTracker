@@ -83,6 +83,17 @@ def player_profile(tag):
     
     db.close()
     
+    # Fetch granular attacks
+    raw_attacks = db.get_player_attacks(tag)
+    
+    # Organize attacks by war_id for easy lookup in the template
+    attacks_by_war = {}
+    for attack in raw_attacks:
+        war_id = attack['war_id']
+        if war_id not in attacks_by_war:
+            attacks_by_war[war_id] = []
+        attacks_by_war[war_id].append(attack)
+
     # Process Activity Data for Chart
     # 1. Activity Clock (Hours)
     activity_hours = [0] * 24
@@ -121,6 +132,7 @@ def player_profile(tag):
                            war_stats=war_stats, 
                            activity_hours=activity_hours,
                            history=history,
+                           attacks_by_war=attacks_by_war,
                            donation_dates=donation_dates,
                            donation_values=donation_values,
                            war_dates=war_dates,

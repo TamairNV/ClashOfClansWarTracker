@@ -43,8 +43,15 @@ body {
     transition: 0.2s;
 }
 
-.nav-item.active { color: var(--coc-yellow); }
-.icon { width: 20px; height: 20px; margin-right: 6px; }
+.nav-item.active {
+    color: var(--coc-yellow);
+}
+
+.icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 6px;
+}
 
 /* HERO BANNER */
 .hero-banner {
@@ -54,11 +61,11 @@ body {
     align-items: center;
     text-align: center;
     padding: 30px 15px;
-    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.9)), url('../images/clan_banner.jpg');
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.9)), url('../images/clan_banner.jpg');
     background-size: cover;
-    background-position: center;
+    background-position: 50% 50% !important;
     border-bottom: 2px solid #000;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
     margin-bottom: 15px;
 }
 
@@ -71,10 +78,18 @@ body {
     letter-spacing: 1px;
 }
 
-.hero-content p { color: #bbb; margin-top: 5px; font-size: 0.85rem; }
+.hero-content p {
+    color: #bbb;
+    margin-top: 5px;
+    font-size: 0.85rem;
+}
 
 /* CONTAINER */
-.container { max-width: 900px; margin: 0 auto; padding: 0 8px; }
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 8px;
+}
 
 /* =============================
    ROSTER GRID
@@ -103,8 +118,17 @@ body {
 }
 
 /* Columns */
-.col-rank { width: 30px; font-weight: bold; color: #555; font-size: 0.8rem; }
-.col-th { width: 60px; text-align: center; }
+.col-rank {
+    width: 30px;
+    font-weight: bold;
+    color: #555;
+    font-size: 0.8rem;
+}
+
+.col-th {
+    width: 60px;
+    text-align: center;
+}
 
 .col-name {
     flex: 2;
@@ -130,7 +154,8 @@ body {
     margin-top: 2px;
 }
 
-.col-activity, .col-perf {
+.col-activity,
+.col-perf {
     flex: 1.5;
     display: flex;
     flex-direction: column;
@@ -139,13 +164,37 @@ body {
     font-size: 0.8rem;
 }
 
-.data-group { display: flex; align-items: center; gap: 5px; line-height: 1.2; }
-.data-label { font-size: 0.6rem; color: #777; font-weight: bold; }
-.data-value { color: #ccc; font-weight: bold; }
-.data-value.green { color: var(--war-green); }
+.data-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    line-height: 1.2;
+}
 
-.col-score { width: 60px; text-align: center; }
-.col-status { width: 90px; text-align: right; }
+.data-label {
+    font-size: 0.6rem;
+    color: #777;
+    font-weight: bold;
+}
+
+.data-value {
+    color: #ccc;
+    font-weight: bold;
+}
+
+.data-value.green {
+    color: var(--war-green);
+}
+
+.col-score {
+    width: 60px;
+    text-align: center;
+}
+
+.col-status {
+    width: 90px;
+    text-align: right;
+}
 
 .score-bubble {
     background: #111;
@@ -175,57 +224,211 @@ body {
     min-width: 50px;
 }
 
-.status-war .status-badge { background: var(--war-green); }
-.status-bench .status-badge { background: var(--bench-red); }
-.status-risky .status-badge { background: var(--risky-yellow); color: black; }
-.status-new .status-badge { background: var(--new-blue); }
+.status-war .status-badge {
+    background: var(--war-green);
+}
 
-.th-badge { position: relative; width: 45px; height: 45px; }
-.th-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5)); }
+.status-bench .status-badge {
+    background: var(--bench-red);
+}
+
+.status-risky .status-badge {
+    background: var(--risky-yellow);
+    color: black;
+}
+
+.status-new .status-badge {
+    background: var(--new-blue);
+}
+
+.th-badge {
+    position: relative;
+    width: 45px;
+    height: 45px;
+}
+
+.th-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.5));
+}
+
 .th-badge span {
-    position: absolute; bottom: -4px; right: -4px;
-    background: #000; color: #fff; font-size: 0.6rem; font-weight: bold;
-    padding: 0px 3px; border-radius: 3px; border: 1px solid #555;
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    background: #000;
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: bold;
+    padding: 0px 3px;
+    border-radius: 3px;
+    border: 1px solid #555;
 }
 
 /* =============================
    WAR ROOM STYLES (Restored)
    ============================= */
-.war-header { text-align: center; padding: 20px; background: linear-gradient(to bottom, #2c1a1a, #1a1a1a); border-bottom: 4px solid #000; }
-.vs-container { display: flex; align-items: center; justify-content: center; gap: 15px; }
-.vs-img { width: 60px; }
-.clan-name { font-family: 'Lilita One'; font-size: 1.5rem; color: white; text-transform: uppercase; }
+.war-header {
+    text-align: center;
+    padding: 20px;
+    background: linear-gradient(to bottom, #2c1a1a, #1a1a1a);
+    border-bottom: 4px solid #000;
+}
 
-.strategy-list { margin-top: 20px; }
-.strategy-card { display: flex; align-items: center; justify-content: space-between; background: #333; border: 2px solid #444; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
-.strategy-card.done { opacity: 0.5; filter: grayscale(1); order: 100; }
+.vs-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
 
-.attacker-section { display: flex; align-items: center; flex: 1; gap: 10px; }
-.th-badge-small img { width: 30px; height: 30px; }
-.th-badge-small span { display: none; }
-.attacker-name { font-weight: bold; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; }
+.vs-img {
+    width: 60px;
+}
 
-.instruction-section { flex: 2; text-align: center; padding: 0 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.arrow { color: var(--coc-yellow); font-size: 1.2rem; margin-bottom: 2px; }
-.strat-reason { font-size: 0.8rem; color: #ccc; display: block; line-height: 1.1; }
+.clan-name {
+    font-family: 'Lilita One';
+    font-size: 1.5rem;
+    color: white;
+    text-transform: uppercase;
+}
 
-.target-section { flex: 1; display: flex; justify-content: flex-end; }
-.target-box { text-align: center; background: #222; padding: 5px; border-radius: 6px; border: 1px solid #555; min-width: 60px; }
-.map-pos { display: block; font-size: 0.7rem; color: #888; font-weight: bold; }
-.target-th { width: 30px; height: 30px; }
-.star-icon { width: 12px; height: 12px; }
+.strategy-list {
+    margin-top: 20px;
+}
 
-.confidence-wrapper { width: 100%; height: 4px; background: #111; border-radius: 2px; margin: 4px auto; overflow: hidden; max-width: 80px; }
-.confidence-bar { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
-.confidence-text { font-size: 0.65rem; color: #666; display: block; }
+.strategy-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #333;
+    border: 2px solid #444;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
 
-.empty-state { text-align: center; margin-top: 50px; opacity: 0.6; }
+.strategy-card.done {
+    opacity: 0.5;
+    filter: grayscale(1);
+    order: 100;
+}
+
+.attacker-section {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 10px;
+}
+
+.th-badge-small img {
+    width: 30px;
+    height: 30px;
+}
+
+.th-badge-small span {
+    display: none;
+}
+
+.attacker-name {
+    font-weight: bold;
+    font-size: 0.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.instruction-section {
+    flex: 2;
+    text-align: center;
+    padding: 0 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.arrow {
+    color: var(--coc-yellow);
+    font-size: 1.2rem;
+    margin-bottom: 2px;
+}
+
+.strat-reason {
+    font-size: 0.8rem;
+    color: #ccc;
+    display: block;
+    line-height: 1.1;
+}
+
+.target-section {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.target-box {
+    text-align: center;
+    background: #222;
+    padding: 5px;
+    border-radius: 6px;
+    border: 1px solid #555;
+    min-width: 60px;
+}
+
+.map-pos {
+    display: block;
+    font-size: 0.7rem;
+    color: #888;
+    font-weight: bold;
+}
+
+.target-th {
+    width: 30px;
+    height: 30px;
+}
+
+.star-icon {
+    width: 12px;
+    height: 12px;
+}
+
+.confidence-wrapper {
+    width: 100%;
+    height: 4px;
+    background: #111;
+    border-radius: 2px;
+    margin: 4px auto;
+    overflow: hidden;
+    max-width: 80px;
+}
+
+.confidence-bar {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+}
+
+.confidence-text {
+    font-size: 0.65rem;
+    color: #666;
+    display: block;
+}
+
+.empty-state {
+    text-align: center;
+    margin-top: 50px;
+    opacity: 0.6;
+}
 
 /* =============================
    MOBILE RESPONSIVENESS
    ============================= */
 @media (max-width: 600px) {
-    .header-row { display: none; }
+    .header-row {
+        display: none;
+    }
 
     /* Roster Card Grid */
     .player-card {
@@ -238,54 +441,120 @@ body {
     }
 
     .col-rank {
-        grid-column: 1; grid-row: 1;
-        position: absolute; top: 5px; left: 5px;
-        font-size: 0.6rem; opacity: 0.6; z-index: 10;
+        grid-column: 1;
+        grid-row: 1;
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        font-size: 0.6rem;
+        opacity: 0.6;
+        z-index: 10;
     }
+
     .col-th {
-        grid-column: 1; grid-row: 1 / span 3;
-        display: flex; justify-content: center; align-items: center;
+        grid-column: 1;
+        grid-row: 1 / span 3;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
-    .th-badge { width: 45px; height: 45px; }
+
+    .th-badge {
+        width: 45px;
+        height: 45px;
+    }
 
     .col-name {
-        grid-column: 2; grid-row: 1;
-        width: 100%; padding: 0; align-self: end;
+        grid-column: 2;
+        grid-row: 1;
+        width: 100%;
+        padding: 0;
+        align-self: end;
     }
-    .player-link { font-size: 0.95rem; }
-    .tag { display: inline; font-size: 0.65rem; margin-left: 5px; }
+
+    .player-link {
+        font-size: 0.95rem;
+    }
+
+    .tag {
+        display: inline;
+        font-size: 0.65rem;
+        margin-left: 5px;
+    }
 
     .col-activity {
-        grid-column: 2; grid-row: 2;
-        display: flex; gap: 8px;
-        justify-content: flex-start; align-items: center;
-        width: 100%; padding: 0; border: none; margin: 0;
+        grid-column: 2;
+        grid-row: 2;
+        display: flex;
+        gap: 8px;
+        justify-content: flex-start;
+        align-items: center;
+        width: 100%;
+        padding: 0;
+        border: none;
+        margin: 0;
     }
 
     .col-perf {
-        grid-column: 2; grid-row: 3;
-        display: flex; justify-content: flex-start; align-items: center;
-        width: 100%; padding: 0; border: none; margin: 0;
+        grid-column: 2;
+        grid-row: 3;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        width: 100%;
+        padding: 0;
+        border: none;
+        margin: 0;
     }
 
     .col-status {
-        grid-column: 3; grid-row: 1;
-        width: 100%; text-align: right; align-self: center;
+        grid-column: 3;
+        grid-row: 1;
+        width: 100%;
+        text-align: right;
+        align-self: center;
     }
 
     .col-score {
-        grid-column: 3; grid-row: 2 / span 2;
-        width: 100%; text-align: right; align-self: center;
+        grid-column: 3;
+        grid-row: 2 / span 2;
+        width: 100%;
+        text-align: right;
+        align-self: center;
     }
 
     /* Tweaks for text size */
-    .data-group { font-size: 0.75rem; }
-    .data-label { font-size: 0.6rem; color: #777; margin-right: 3px; display: inline-block; }
-    .data-value { font-size: 0.8rem; }
-    .score-bubble { font-size: 1rem; padding: 2px 8px; }
+    .data-group {
+        font-size: 0.75rem;
+    }
+
+    .data-label {
+        font-size: 0.6rem;
+        color: #777;
+        margin-right: 3px;
+        display: inline-block;
+    }
+
+    .data-value {
+        font-size: 0.8rem;
+    }
+
+    .score-bubble {
+        font-size: 1rem;
+        padding: 2px 8px;
+    }
 
     /* War Room Mobile Tweaks */
-    .strategy-card { padding: 8px; }
-    .attacker-name { max-width: 80px; font-size: 0.8rem; }
-    .strat-reason { font-size: 0.7rem; }
+    .strategy-card {
+        padding: 8px;
+    }
+
+    .attacker-name {
+        max-width: 80px;
+        font-size: 0.8rem;
+    }
+
+    .strat-reason {
+        font-size: 0.7rem;
+    }
 }

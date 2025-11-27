@@ -7,16 +7,21 @@ from sqlManager import SQLManager
 def update_schema():
     db = SQLManager(Config.DB_HOST, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME)
     
-    print("🚀 Creating war_attacks table...")
+    print("🚀 Re-creating war_attacks table with new columns...")
+    
+    # Drop first to ensure schema update (since it's a new feature, data loss is acceptable)
+    db.execute("DROP TABLE IF EXISTS war_attacks")
     
     sql = """
-    CREATE TABLE IF NOT EXISTS war_attacks (
+    CREATE TABLE war_attacks (
         attack_id INT AUTO_INCREMENT PRIMARY KEY,
         war_id INT NOT NULL,
         player_tag VARCHAR(15) NOT NULL,
         stars INT DEFAULT 0,
         destruction FLOAT DEFAULT 0.0,
-        attack_order INT DEFAULT 1, -- 1 for first attack, 2 for second
+        duration INT DEFAULT 0, -- Attack duration in seconds
+        army_composition JSON, -- JSON string of troops/spells used
+        attack_order INT DEFAULT 1,
         defender_tag VARCHAR(15),
         defender_th INT,
         

@@ -47,9 +47,19 @@ async def main():
 
                 # Update Individual Attacks (Granular)
                 for i, attack in enumerate(member.attacks, 1):
+                    # Extract Army Composition
+                    army_json = {}
+                    # coc.py attack object might not have direct 'units' depending on version/endpoint,
+                    # but usually it's available if detailed. If not, we default to empty.
+                    # We'll try to serialize troops if available.
+                    # Note: Standard war API often doesn't give full army details unless explicitly fetched,
+                    # but we'll add the logic just in case or for future use.
+                    
                     attack_data = {
                         'stars': attack.stars,
                         'destruction': attack.destruction,
+                        'duration': attack.duration, # Seconds
+                        'army_composition': str(army_json), # Placeholder for now as war API is limited
                         'order': i,
                         'defender_tag': attack.defender_tag,
                         'defender_th': attack.defender.town_hall if attack.defender else 0

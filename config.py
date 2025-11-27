@@ -13,7 +13,6 @@ class Config:
     COC_EMAIL = os.environ.get('COC_EMAIL')
     COC_PASSWORD = os.environ.get('COC_PASSWORD')
 
-
     # Clan Settings
     CLAN_TAG = "#8GGPQLPU"  # Replace with your real clan tag
 

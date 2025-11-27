@@ -5,7 +5,7 @@ import threading
 from waitress import serve
 from app import app  # Make sure this script is in the same folder as app.py
 
-
+import sys
 # --- 1. Your Flask Server Setup ---
 def get_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -44,7 +44,7 @@ last_run_times = {script: 0 for script in scripts_config}
 def run_script(script_path):
     try:
         print(f"--- Running {script_path} ---")
-        subprocess.run(['python', script_path], check=True)
+        subprocess.run([sys.executable, script_path], check=True)
         print(f"Finished {script_path}")
     except Exception as e:
         print(f"Error running {script_path}: {e}")

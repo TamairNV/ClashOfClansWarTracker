@@ -133,13 +133,45 @@ class SQLManager:
         db_player = self.get_player(player_tag)
         if not db_player: return
         last_donations = db_player.get('last_known_donations', 0)
+        
+        # Log activity if donations changed
         if current_donations > last_donations:
+            self.log_player_activity(player_tag, 'donation', value=current_donations)
             self.execute(
                 "UPDATE players SET last_known_donations=%s, last_known_received=%s, last_active_time=NOW() WHERE player_tag=%s",
                 (current_donations, current_received, player_tag))
         elif current_donations < last_donations:
+            # Season reset or left clan and came back? Just update without logging activity for now
             self.execute("UPDATE players SET last_known_donations=%s, last_known_received=%s WHERE player_tag=%s",
                          (current_donations, current_received, player_tag))
+
+    def log_player_activity(self, player_tag, activity_type, value=0):
+        """Logs a timestamped activity event for a player."""
+        self.execute(
+            "INSERT INTO player_activity_log (player_tag, activity_type, value, timestamp) VALUES (%s, %s, %s, NOW())",
+            (player_tag, activity_type, value)
+        )
+
+    def get_player_activity_history(self, player_tag, limit=100):
+        """Fetches recent activity logs for a player."""
+        return self.fetch_all(
+            "SELECT * FROM player_activity_log WHERE player_tag = %s ORDER BY timestamp DESC LIMIT %s",
+            (player_tag, limit)
+        )
+
+    def get_player_war_stats(self, player_tag):
+        """Aggregates war statistics for a player."""
+        sql = """
+            SELECT 
+                COUNT(*) as total_wars,
+                SUM(stars) as total_stars,
+                AVG(destruction_percentage) as avg_destruction,
+                SUM(attacks_used) as total_attacks,
+                SUM(CASE WHEN attacks_used = 0 THEN 1 ELSE 0 END) as missed_attacks
+            FROM war_performance
+            WHERE player_tag = %s
+        """
+        return self.fetch_one(sql, (player_tag,))
 
     # --- STRATEGY DATA ---
 

@@ -73,3 +73,13 @@ CREATE TABLE IF NOT EXISTS war_opponents (
 );
 
 ALTER TABLE players ADD COLUMN trust_score FLOAT DEFAULT 0;
+
+-- 5. Player Activity Log
+-- Tracks historical activity events (donations, attacks, etc.)
+CREATE TABLE IF NOT EXISTS player_activity_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    player_tag VARCHAR(15),
+    activity_type VARCHAR(20), -- 'donation', 'attack', 'login_seen'
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (player_tag) REFERENCES players(player_tag) ON DELETE CASCADE
+);

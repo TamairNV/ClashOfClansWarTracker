@@ -33,7 +33,8 @@ def roster():
 
         status_text, status_class = get_status(p, total_wars)
         clean_tag = p['player_tag'].replace("#", "")
-        deep_link = f"clashofclans://action=OpenPlayerProfile&tag=%23{clean_tag}"
+        # deep_link = f"clashofclans://action=OpenPlayerProfile&tag=%23{clean_tag}"
+        deep_link = f"/player/{clean_tag}"
 
         roster_data.append({
             'name': p['name'], 'th': p['town_hall_level'], 'tag': p['player_tag'],
@@ -61,3 +62,67 @@ def war_room():
     db.close()
 
     return render_template('war_room.html', active=True, war_info=active_war, strategies=recommendations)
+
+
+@main.route('/player/<path:tag>')
+def player_profile(tag):
+    # Ensure tag has hash
+    if not tag.startswith('#'):
+        tag = f"#{tag}"
+    
+    db = SQLManager(Config.DB_HOST, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME)
+    player = db.get_player(tag)
+    
+    if not player:
+        return "Player not found", 404
+
+    # Fetch Data
+    war_stats = db.get_player_war_stats(tag)
+    activity_log = db.get_player_activity_history(tag, limit=200)
+    history = db.get_player_history(tag, limit=20)
+    
+    db.close()
+    
+    # Process Activity Data for Chart
+    # 1. Activity Clock (Hours)
+    activity_hours = [0] * 24
+    
+    # 2. Donation History (Date -> Value)
+    donation_dates = []
+    donation_values = []
+    
+    for log in activity_log:
+        # Clock
+        hour = log['timestamp'].hour
+        activity_hours[hour] += 1
+        
+        # Donation History (Only if it's a donation event)
+        if log['activity_type'] == 'donation' and log.get('value'):
+            donation_dates.append(log['timestamp'].strftime('%m-%d'))
+            donation_values.append(log['value'])
+
+    # Reverse to show oldest to newest
+    donation_dates.reverse()
+    donation_values.reverse()
+
+    # 3. War Performance Trend
+    war_dates = []
+    war_stars = []
+    war_destruction = []
+    
+    # History is already sorted DESC (newest first), so reverse for chart
+    for war in reversed(history):
+        war_dates.append(war['start_time'].strftime('%m-%d'))
+        war_stars.append(war['stars'])
+        war_destruction.append(war['destruction_percentage'])
+
+    return render_template('player_profile.html', 
+                           player=player, 
+                           war_stats=war_stats, 
+                           activity_hours=activity_hours,
+                           history=history,
+                           donation_dates=donation_dates,
+                           donation_values=donation_values,
+                           war_dates=war_dates,
+                           war_stars=war_stars,
+                           war_destruction=war_destruction)

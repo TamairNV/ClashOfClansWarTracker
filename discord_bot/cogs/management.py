@@ -140,6 +140,18 @@ class Management(commands.Cog):
                     except discord.Forbidden:
                         print(f"❌ Missing permissions to remove role {role_to_remove.name}")
 
+        # 3. Sync Nickname
+        # We want the Discord nickname to match the In-Game Name
+        in_game_name = player_data.get('name')
+        if in_game_name and member.display_name != in_game_name:
+            try:
+                await member.edit(nick=in_game_name)
+                print(f"✅ Updated nickname for {member.name} to {in_game_name}")
+            except discord.Forbidden:
+                print(f"❌ Cannot change nickname for {member.name} (Missing Permissions or User is Owner/Higher Role)")
+            except Exception as e:
+                print(f"⚠️ Error changing nickname for {member.name}: {e}")
+
     @commands.command(name='setup_server')
     @commands.has_permissions(administrator=True)
     async def setup_server(self, ctx):

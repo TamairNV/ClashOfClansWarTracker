@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,15 +9,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
     <link rel="shortcut icon" href="{{ url_for('static', filename='icons/roster_icon.png') }}">
 </head>
+
 <body>
 
     <!-- NAV BAR -->
     <nav class="nav-bar">
+        <a href="{{ url_for('main.index') }}" class="nav-item">
+            Home
+        </a>
         <a href="{{ url_for('main.roster') }}" class="nav-item active">
-            <img src="{{ url_for('static', filename='icons/roster_icon.png') }}" class="icon" onerror="this.style.display='none'"> Roster
+            <img src="{{ url_for('static', filename='icons/roster_icon.png') }}" class="icon"
+                onerror="this.style.display='none'"> Roster
         </a>
         <a href="{{ url_for('main.war_room') }}" class="nav-item">
-            <img src="{{ url_for('static', filename='icons/swords_icon.png') }}" class="icon" onerror="this.style.display='none'"> War Room
+            <img src="{{ url_for('static', filename='icons/swords_icon.png') }}" class="icon"
+                onerror="this.style.display='none'"> War Room
         </a>
     </nav>
 
@@ -50,8 +57,7 @@
                 <div class="col-th">
                     <div class="th-badge">
                         <img src="{{ url_for('static', filename='town_halls/Town_Hall' + player.th|string + '.webp') }}"
-                             class="th-img" width="50" height="50"
-                             onerror="this.style.display='none'">
+                            class="th-img" width="50" height="50" onerror="this.style.display='none'">
                         <span>{{ player.th }}</span>
                     </div>
                 </div>
@@ -98,4 +104,5 @@
     </div>
 
 </body>
+
 </html>

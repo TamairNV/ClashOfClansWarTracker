@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,9 +9,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
     <link rel="shortcut icon" href="{{ url_for('static', filename='icons/roster_icon.png') }}">
 </head>
+
 <body>
 
     <nav class="nav-bar">
+        <a href="{{ url_for('main.index') }}" class="nav-item">
+            Home
+        </a>
         <a href="{{ url_for('main.roster') }}" class="nav-item">
             <img src="{{ url_for('static', filename='icons/roster_icon.png') }}" class="icon"> Roster
         </a>
@@ -42,7 +47,8 @@
                 <!-- LEFT: Attacker -->
                 <div class="attacker-section">
                     <div class="th-badge-small">
-                        <img src="{{ url_for('static', filename='town_halls/Town_Hall' + strat.player.th|string + '.webp') }}">
+                        <img
+                            src="{{ url_for('static', filename='town_halls/Town_Hall' + strat.player.th|string + '.webp') }}">
                         <span>{{ strat.player.th }}</span>
                     </div>
                     <div class="attacker-name">{{ strat.player.name }}</div>
@@ -56,7 +62,8 @@
                     <!-- Confidence Meter -->
                     {% if strat.target %}
                     <div class="confidence-wrapper">
-                        <div class="confidence-bar" style="width: {{ strat.confidence }}%;
+                        <div class="confidence-bar"
+                            style="width: {{ strat.confidence }}%;
                             background: {% if strat.confidence > 80 %}#4CAF50{% elif strat.confidence > 50 %}#FFC107{% else %}#F44336{% endif %};">
                         </div>
                     </div>
@@ -67,22 +74,23 @@
                 <!-- RIGHT: Target -->
                 <div class="target-section">
                     {% if strat.target %}
-                        <div class="target-box">
-                            <span class="map-pos">#{{ strat.target.map_position }}</span>
-                            <img src="{{ url_for('static', filename='town_halls/Town_Hall' + strat.target.town_hall_level|string + '.webp') }}" class="target-th">
+                    <div class="target-box">
+                        <span class="map-pos">#{{ strat.target.map_position }}</span>
+                        <img src="{{ url_for('static', filename='town_halls/Town_Hall' + strat.target.town_hall_level|string + '.webp') }}"
+                            class="target-th">
 
-                            <div class="stars-display">
-                                {% for i in range(3) %}
-                                    {% if i < strat.target.stars %}
-                                    <img src="{{ url_for('static', filename='icons/star_full.png') }}" class="star-icon">
-                                    {% else %}
-                                    <img src="{{ url_for('static', filename='icons/star_empty.png') }}" class="star-icon">
-                                    {% endif %}
+                        <div class="stars-display">
+                            {% for i in range(3) %}
+                            {% if i < strat.target.stars %} <img
+                                src="{{ url_for('static', filename='icons/star_full.png') }}" class="star-icon">
+                                {% else %}
+                                <img src="{{ url_for('static', filename='icons/star_empty.png') }}" class="star-icon">
+                                {% endif %}
                                 {% endfor %}
-                            </div>
                         </div>
+                    </div>
                     {% else %}
-                        <div class="no-target">-</div>
+                    <div class="no-target">-</div>
                     {% endif %}
                 </div>
 
@@ -93,4 +101,5 @@
     {% endif %}
 
 </body>
+
 </html>

@@ -118,13 +118,19 @@ class SQLManager:
     def get_player(self, player_tag):
         return self.fetch_one("SELECT * FROM players WHERE player_tag = %s", (player_tag,))
 
+    def get_player_by_discord_id(self, discord_id):
+        return self.fetch_one("SELECT * FROM players WHERE discord_id = %s", (discord_id,))
+
+    def link_discord_user(self, player_tag, discord_id):
+        self.execute("UPDATE players SET discord_id = %s WHERE player_tag = %s", (discord_id, player_tag))
+
     def update_player_roster(self, player_data):
         sql = """
-        INSERT INTO players (player_tag, name, town_hall_level, is_in_clan, updated_at)
-        VALUES (%s, %s, %s, TRUE, NOW())
-        ON DUPLICATE KEY UPDATE name=VALUES(name), town_hall_level=VALUES(town_hall_level), is_in_clan=TRUE, updated_at=NOW()
+        INSERT INTO players (player_tag, name, town_hall_level, role, is_in_clan, updated_at)
+        VALUES (%s, %s, %s, %s, TRUE, NOW())
+        ON DUPLICATE KEY UPDATE name=VALUES(name), town_hall_level=VALUES(town_hall_level), role=VALUES(role), is_in_clan=TRUE, updated_at=NOW()
         """
-        self.execute(sql, (player_data.tag, player_data.name, player_data.town_hall))
+        self.execute(sql, (player_data.tag, player_data.name, player_data.town_hall, str(player_data.role)))
 
     def mark_player_left(self, player_tag):
         self.execute("UPDATE players SET is_in_clan = FALSE WHERE player_tag = %s", (player_tag,))

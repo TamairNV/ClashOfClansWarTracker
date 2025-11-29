@@ -1,22 +1,155 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
 
-{% block title %}Home - Secure Flask Lab{% endblock %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clan War Tracker - Welcome</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='icons/roster_icon.png') }}">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)),
+            url("{{ url_for('static', filename='images/background.jpg') }}");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-{% block content %}
-    <h2>Welcome</h2>
-    <p>Please enter your name below:</p>
+        .landing-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: white;
+        }
 
-    <form method="POST">
-    {{ form.hidden_tag() }}
-    <p>
-        {{ form.name.label }}<br>
-        {{ form.name(size=32) }}
-    </p>
-    <p>{{ form.submit() }}</p>
-    </form>
+        .landing-title {
+            font-family: 'Lilita One', cursive;
+            font-size: 5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 4px 4px 0 #000;
+            letter-spacing: 2px;
+        }
 
-{% if name %}
-    <p>Hello, <strong>{{ name }}</strong>!</p>
-{% endif %}
+        .landing-subtitle {
+            font-size: 1.8rem;
+            margin-bottom: 3rem;
+            opacity: 0.9;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            font-weight: bold;
+        }
 
-{% endblock %}
+        .btn-discord {
+            background-color: #5865F2;
+            color: white;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: transform 0.2s, background-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-discord:hover {
+            background-color: #4752C4;
+            transform: scale(1.05);
+        }
+
+        .btn-enter {
+            background-color: #4CAF50;
+            color: white;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-left: 1rem;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-enter:hover {
+            transform: scale(1.05);
+            background-color: #43A047;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 600px) {
+            .landing-title {
+                font-size: 3rem;
+                /* Smaller title */
+                padding: 0 10px;
+            }
+
+            .landing-subtitle {
+                font-size: 1.2rem;
+                padding: 0 20px;
+            }
+
+            .actions {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                width: 100%;
+                padding: 0 20px;
+                align-items: center;
+            }
+
+            .btn-discord,
+            .btn-enter {
+                width: 100%;
+                justify-content: center;
+                margin: 0;
+                /* Remove left margin from btn-enter */
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAV BAR -->
+    <nav class="nav-bar">
+        <a href="{{ url_for('main.index') }}" class="nav-item active">
+            Home
+        </a>
+        <a href="{{ url_for('main.roster') }}" class="nav-item">
+            <img src="{{ url_for('static', filename='icons/roster_icon.png') }}" class="icon"
+                onerror="this.style.display='none'"> Roster
+        </a>
+        <a href="{{ url_for('main.war_room') }}" class="nav-item">
+            <img src="{{ url_for('static', filename='icons/swords_icon.png') }}" class="icon"
+                onerror="this.style.display='none'"> War Room
+        </a>
+    </nav>
+
+    <div class="landing-container">
+        <h1 class="landing-title">CLASH WAR TRACKER</h1>
+        <p class="landing-subtitle">Dominate Wars. Track Stats. Climb the Ranks.</p>
+
+        <div class="actions">
+            <a href="https://discord.gg/Xgn44EHANe" target="_blank" class="btn-discord">
+                Join Discord Server
+            </a>
+            <a href="{{ url_for('main.roster') }}" class="btn-enter">
+                View Roster
+            </a>
+        </div>
+    </div>
+
+</body>
+
+</html>

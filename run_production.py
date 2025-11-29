@@ -51,14 +51,29 @@ def run_script(script_path):
 
 
 # --- 3. Execution ---
+def run_discord_bot():
+    """Runs the Discord Bot."""
+    print("🤖 Discord Bot Starting...")
+    # We run the bot script as a subprocess to keep environments clean if needed,
+    # or we could import main. But subprocess is safer for separate loops.
+    try:
+        subprocess.run([sys.executable, "discord_bot/main.py"], check=True)
+    except Exception as e:
+        print(f"❌ Discord Bot Crashed: {e}")
+
 if __name__ == "__main__":
 
     # Start Flask in a separate thread
-    # daemon=True means this thread will die when you quit the main script
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
 
-    print("--- Scheduler Started (Flask running in background) ---")
+    # Start Discord Bot in a separate thread (since it has its own loop)
+    # Note: discord.py blocks, so we put it in a thread.
+    bot_thread = threading.Thread(target=run_discord_bot, daemon=True)
+    bot_thread.start()
+
+    print("--- Scheduler Started (Flask & Discord Bot running in background) ---")
+    print("✅ 24/7 Monitoring Active")
 
     # Start the scheduler loop
     while True:

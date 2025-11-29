@@ -18,9 +18,9 @@ def calculate_hit_probability(attacker, defender):
     else:
         base_prob = 0.02  # Suicide
 
-    # Adjust for skill (Cap at 98%, floor at 1%)
+    # Adjust for skill (Cap at 95%, floor at 1%)
     final_prob = base_prob * trust_multiplier
-    return min(0.98, max(0.01, final_prob))
+    return min(0.95, max(0.01, final_prob))
 
 
 def detect_mismatch(our_team, enemy_team):
@@ -38,8 +38,18 @@ def detect_mismatch(our_team, enemy_team):
     return False, 0
 
 
-def get_war_recommendations(our_team, enemy_team):
+def get_war_recommendations(our_team, enemy_team, war_context=None):
     recommendations = []
+    
+    # Default context if None
+    if not war_context:
+        war_context = {'hours_left': 24, 'score_diff': 0}
+
+    hours_left = war_context.get('hours_left', 24)
+    
+    # "Secure the Win" Mode:
+    # If < 4 hours left, we prioritize cleaning up lower bases over risking top bases.
+    secure_win_mode = hours_left <= 4
 
     # Sort lists
     our_team_sorted = sorted(our_team, key=lambda x: (x['th'], x['score']), reverse=True)
@@ -76,6 +86,8 @@ def get_war_recommendations(our_team, enemy_team):
             # This is a sacrificial lamb (Bottom player)
             # Find a top base not yet 2-starred
             for enemy in enemy_team_sorted[:shift_n]:  # Look at top N enemies
+                if enemy['opponent_tag'] in assigned_targets: continue # Skip if already assigned
+                
                 if enemy['stars'] < 2:
                     best_target = enemy
                     strategy_type = "🛡️ SCOUT/2★ (Mismatch Strat)"
@@ -91,6 +103,7 @@ def get_war_recommendations(our_team, enemy_team):
 
             for enemy in enemy_team_sorted:
                 if enemy['stars'] == 3: continue  # Skip cleared
+                if enemy['opponent_tag'] in assigned_targets: continue # Skip if already assigned
 
                 prob = calculate_hit_probability(player, enemy)
 
@@ -98,10 +111,25 @@ def get_war_recommendations(our_team, enemy_team):
                 # Value = Probability * (Stars to Gain)
                 stars_to_gain = 3 - enemy['stars']
                 expected_value = prob * stars_to_gain
+                
+                # --- SECURE THE WIN LOGIC ---
+                if secure_win_mode:
+                    # If target is already 2-starred, heavily penalize unless it's a guaranteed 3-star
+                    if enemy['stars'] == 2:
+                        expected_value *= 0.2 # Massive penalty for hitting 2-star bases
+                        
+                    # If target is low (Dip) and not cleared, boost it to ensure cleanup
+                    # We want top players to dip and clear lower bases
+                    if prob > 0.9:
+                        expected_value *= 2.0 # Prioritize guaranteed stars
 
                 # Penalty for "Dipping Too Deep" (Wasting a TH16 on a TH12)
+                # In Secure Win Mode, we relax this penalty because stars matter more than efficiency
                 th_waste = max(0, player['th'] - enemy['town_hall_level'] - 1)
                 efficiency_penalty = th_waste * 0.2
+                
+                if secure_win_mode:
+                    efficiency_penalty *= 0.5 # Lower penalty late in war
 
                 final_score = expected_value - efficiency_penalty
 
@@ -121,11 +149,15 @@ def get_war_recommendations(our_team, enemy_team):
                     strategy_type = "⚔️ ATTACK (Good Match)"
                 else:
                     strategy_type = "⚠️ REACH (High Risk)"
+                    
+                if secure_win_mode and target['stars'] < 3 and prob > 0.9:
+                     strategy_type = "🧹 CLEANUP (Secure Win)"
 
         # Assign
         if best_target:
             rec['target'] = best_target
             rec['reason'] = strategy_type
+            assigned_targets.add(best_target['opponent_tag'])
 
         recommendations.append(rec)
 

@@ -19,6 +19,11 @@ def get_status(player, wars_played):
 
 
 @main.route('/')
+def index():
+    return render_template('index.html')
+
+
+@main.route('/roster')
 def roster():
     db = SQLManager(Config.DB_HOST, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME)
     players = db.get_full_roster_including_leavers()
@@ -58,7 +63,34 @@ def war_room():
         return render_template('war_room.html', active=False)
 
     our_team, enemy_team = db.get_full_war_map(active_war['war_id'])
-    recommendations = get_war_recommendations(our_team, enemy_team)
+    
+    # Calculate Context
+    import datetime
+    now = datetime.datetime.utcnow()
+    # active_war['end_time'] is likely a datetime object from SQLManager or string. 
+    # SQLManager usually returns datetime. Let's assume it is.
+    # If it's a string, we might need parsing. But based on previous files, it seems to be datetime.
+    
+    hours_left = 24
+    if active_war.get('end_time'):
+        end_time = active_war['end_time']
+        if isinstance(end_time, str):
+             # Fallback if string (though it shouldn't be with mysql connector usually)
+             try:
+                 end_time = datetime.datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S')
+             except:
+                 pass
+        
+        if isinstance(end_time, datetime.datetime):
+            diff = end_time - now
+            hours_left = diff.total_seconds() / 3600
+
+    war_context = {
+        'hours_left': hours_left,
+        'score_diff': 0 # We could calculate this if we had enemy stars, but for now time is key
+    }
+
+    recommendations = get_war_recommendations(our_team, enemy_team, war_context)
     db.close()
 
     return render_template('war_room.html', active=True, war_info=active_war, strategies=recommendations)

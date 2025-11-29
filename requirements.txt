@@ -4,3 +4,5 @@ asyncio
 cryptography
 waitress
 flask
+discord.py
+python-dotenv

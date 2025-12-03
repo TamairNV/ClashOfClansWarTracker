@@ -328,7 +328,13 @@
                     <tbody>
                         {% for war in history %}
                         <tr>
-                            <td>{{ war.start_time.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {{ war.start_time.strftime('%Y-%m-%d') }}
+                                {% if war.war_type == 'cwl' %}
+                                <span
+                                    style="background: #a855f7; color: white; padding: 2px 4px; border-radius: 4px; font-size: 0.6rem; margin-left: 4px; font-weight: bold;">CWL</span>
+                                {% endif %}
+                            </td>
                             <td>{{ war.town_hall_at_time }}</td>
                             <td style="color: #facc15; font-weight: bold;">{{ war.stars }} ★</td>
                             <td>{{ war.destruction_percentage }}%</td>
@@ -369,7 +375,8 @@
                 labels: Array.from({ length: 24 }, (_, i) => i + 'h'),
                 datasets: [{
                     label: 'Activity Level',
-                    data: {{ activity_hours | tojson }},
+                    data: {{ activity_hours | tojson }
+        },
             backgroundColor: 'rgba(250, 204, 21, 0.2)',
             borderColor: '#facc15',
             pointBackgroundColor: '#facc15',

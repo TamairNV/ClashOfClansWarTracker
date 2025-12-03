@@ -6,20 +6,44 @@ def calculate_hit_probability(attacker, defender):
     delta_th = attacker['th'] - defender['town_hall_level']
     trust_multiplier = attacker.get('score', 50) / 50.0  # 1.0 is average skill
 
-    # Baseline P(3*) from Research
+    # Baseline P(3*) from Research (Conservative Update)
     if delta_th >= 2:
-        base_prob = 0.99  # Bully
+        base_prob = 0.99  # Bully (TH16 vs TH14)
     elif delta_th == 1:
-        base_prob = 0.95  # Dip
+        base_prob = 0.90  # Dip (TH16 vs TH15) - Reduced from 0.95
     elif delta_th == 0:
-        base_prob = 0.50  # Peer (Root Rider Meta)
+        base_prob = 0.40  # Peer (TH16 vs TH16) - Reduced from 0.50
     elif delta_th == -1:
-        base_prob = 0.15  # Reach
+        base_prob = 0.10  # Reach (TH15 vs TH16) - Reduced from 0.15
     else:
-        base_prob = 0.02  # Suicide
+        base_prob = 0.01  # Suicide
 
-    # Adjust for skill (Cap at 95%, floor at 1%)
-    final_prob = base_prob * trust_multiplier
+    # --- Map Rank Penalty ---
+    # If I am #5 and I hit #4, that is harder than hitting #5.
+    # If I am #5 and I hit #10, that is easier (cleanup).
+    
+    attacker_rank = attacker.get('map_position', 999)
+    defender_rank = defender.get('map_position', 999)
+    
+    rank_diff = defender_rank - attacker_rank # Positive = Hitting Lower (Easier), Negative = Hitting Higher (Harder)
+    
+    # Penalty for hitting higher (e.g. #5 hitting #1 -> diff = -4)
+    if rank_diff < 0:
+        rank_penalty = abs(rank_diff) * 0.05 # 5% penalty per rank spot
+        base_prob -= rank_penalty
+    
+    # Bonus for hitting lower (Cleanup)
+    elif rank_diff > 0:
+        rank_bonus = min(0.20, rank_diff * 0.02) # Cap bonus at 20%
+        base_prob += rank_bonus
+
+    # Adjust for skill (Trust Score)
+    # Trust Score 50 is average. 
+    # We want Trust Score to have impact but not override the fundamental difficulty.
+    trust_factor = (attacker.get('score', 50) - 50) / 100.0 # -0.5 to +0.5
+    
+    final_prob = base_prob + trust_factor
+    
     return min(0.95, max(0.01, final_prob))
 
 

@@ -104,7 +104,7 @@ class SQLManager:
     def get_player_history(self, player_tag, limit=5):
         # ONLY fetches ENDED wars to avoid active war penalties
         sql = """
-            SELECT wp.*, w.start_time 
+            SELECT wp.*, w.start_time, w.war_type
             FROM war_performance wp
             JOIN wars w ON wp.war_id = w.war_id
             WHERE wp.player_tag = %s AND w.state = 'warEnded'

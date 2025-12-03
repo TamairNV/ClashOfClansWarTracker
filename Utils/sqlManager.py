@@ -239,7 +239,14 @@ class SQLManager:
 
     def get_full_war_map(self, war_id):
         our_team = self.fetch_all("""
-            SELECT p.name, wp.town_hall_at_time as th, wp.attacks_used, wp.player_tag, p.trust_score as score
+            SELECT 
+                p.name, 
+                wp.town_hall_at_time as th, 
+                wp.attacks_used, 
+                wp.player_tag, 
+                p.trust_score as score,
+                (SELECT COUNT(*) FROM war_attacks wa WHERE wa.player_tag = p.player_tag AND wa.stars = 3) as total_triples,
+                (SELECT COUNT(*) FROM war_attacks wa WHERE wa.player_tag = p.player_tag) as total_attacks
             FROM war_performance wp
             JOIN players p ON wp.player_tag = p.player_tag
             WHERE wp.war_id = %s

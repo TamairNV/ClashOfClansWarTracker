@@ -90,6 +90,12 @@ def war_room():
         'score_diff': 0 # We could calculate this if we had enemy stars, but for now time is key
     }
 
+    # Calculate Triple Rate for each player
+    for p in our_team:
+        triples = p.get('total_triples', 0)
+        attacks = p.get('total_attacks', 0)
+        p['triple_rate'] = triples / attacks if attacks > 0 else 0.30 # Default to 30% if no data
+
     recommendations = get_war_recommendations(our_team, enemy_team, war_context)
     db.close()
 

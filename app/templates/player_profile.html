@@ -327,7 +327,7 @@
                     </thead>
                     <tbody>
                         {% for war in history %}
-                        <tr>
+                        <tr class="{{ 'cwl-row' if war.war_type == 'cwl' else '' }}">
                             <td>
                                 {{ war.start_time.strftime('%Y-%m-%d') }}
                                 {% if war.war_type == 'cwl' %}

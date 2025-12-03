@@ -124,6 +124,12 @@ class War(commands.Cog):
 
         our_team, enemy_team = self.db.get_full_war_map(active_war['war_id'])
         
+        # Calculate Triple Rate for each player
+        for p in our_team:
+            triples = p.get('total_triples', 0)
+            attacks = p.get('total_attacks', 0)
+            p['triple_rate'] = triples / attacks if attacks > 0 else 0.30 # Default to 30% if no data
+
         war_context = {'hours_left': hours_left, 'score_diff': 0}
         recommendations = get_war_recommendations(our_team, enemy_team, war_context)
 

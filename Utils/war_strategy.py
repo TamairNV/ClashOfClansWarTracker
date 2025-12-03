@@ -37,12 +37,24 @@ def calculate_hit_probability(attacker, defender):
         rank_bonus = min(0.20, rank_diff * 0.02) # Cap bonus at 20%
         base_prob += rank_bonus
 
-    # Adjust for skill (Trust Score)
-    # Trust Score 50 is average. 
-    # We want Trust Score to have impact but not override the fundamental difficulty.
-    trust_factor = (attacker.get('score', 50) - 50) / 100.0 # -0.5 to +0.5
+    # Adjust for skill (Triple Rate)
+    # Baseline Triple Rate is assumed to be 30% (0.30).
+    # If player has 50% triple rate, they get a boost.
+    # If player has 10% triple rate, they get a penalty.
     
-    final_prob = base_prob + trust_factor
+    triple_rate = attacker.get('triple_rate', 0.30)
+    
+    # Skill Factor: (Actual Rate - Baseline)
+    # e.g. 0.50 - 0.30 = +0.20 boost
+    # e.g. 0.10 - 0.30 = -0.20 penalty
+    skill_factor = triple_rate - 0.30
+    
+    # Dampen the skill factor slightly so it's not too extreme? 
+    # Actually, let's let it be raw. If you triple 80% of the time, you deserve a +50% boost.
+    # But we cap the boost/penalty to avoid breaking math.
+    skill_factor = max(-0.25, min(0.40, skill_factor))
+    
+    final_prob = base_prob + skill_factor
     
     return min(0.95, max(0.01, final_prob))
 

@@ -562,3 +562,14 @@ body {
         font-size: 0.7rem;
     }
 }
+
+/* CWL Row Styling */
+.cwl-row {
+    background-color: rgba(168, 85, 247, 0.15) !important;
+    /* Purple tint */
+    border-left: 3px solid #a855f7 !important;
+}
+
+.cwl-row:hover {
+    background-color: rgba(168, 85, 247, 0.25) !important;
+}

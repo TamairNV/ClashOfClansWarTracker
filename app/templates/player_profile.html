@@ -349,7 +349,6 @@
                                     {% endfor %}
                                 </div>
                                 {% else %}
-                                {% else %}
                                 {% if war.war_type|lower == 'cwl' %}
                                 {% if war.attacks_used == 1 %}
                                 <span style="color: #4ade80;">1/1</span>
@@ -363,7 +362,6 @@
                                 <span style="color: #facc15;">1/2</span>
                                 {% else %}
                                 <span style="color: #f87171;">0/2</span>
-                                {% endif %}
                                 {% endif %}
                                 {% endif %}
                                 {% endif %}
@@ -385,8 +383,7 @@
                 labels: Array.from({ length: 24 }, (_, i) => i + 'h'),
                 datasets: [{
                     label: 'Activity Level',
-                    data: {{ activity_hours | tojson }
-        },
+                    data: {{ activity_hours | tojson }},
             backgroundColor: 'rgba(250, 204, 21, 0.2)',
             borderColor: '#facc15',
             pointBackgroundColor: '#facc15',

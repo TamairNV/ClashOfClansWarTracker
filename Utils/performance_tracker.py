@@ -37,16 +37,29 @@ def calculate_trust_score(player_th, history):
 
     # 2. Aggregate Data
     total_wars = len(history)
-    total_possible_attacks = total_wars * 2
+    
+    total_possible_attacks = 0
+    max_possible_stars = 0
+    
+    for row in history:
+        w_type = row.get('war_type', 'regular')
+        if w_type and w_type.lower() == 'cwl':
+            total_possible_attacks += 1
+            max_possible_stars += 3
+        else:
+            total_possible_attacks += 2
+            max_possible_stars += 6
+            
     attacks_made = sum(row['attacks_used'] for row in history)
     total_stars = sum(row['stars'] for row in history)
 
     # 3. Reliability Score (0-100)
-    reliability_score = (attacks_made / total_possible_attacks) * 100
+    reliability_score = (attacks_made / total_possible_attacks) * 100 if total_possible_attacks > 0 else 0
 
     # 4. Skill Score (0-100)
-    avg_stars = total_stars / total_wars
-    skill_score = (avg_stars / 6) * 100
+    # avg_stars = total_stars / total_wars (This is biased if wars have different max stars)
+    # Better: Percentage of possible stars captured
+    skill_score = (total_stars / max_possible_stars) * 100 if max_possible_stars > 0 else 0
 
     # 5. Final Weighted Score
     final_score = (reliability_score * W_RELIABILITY) + \

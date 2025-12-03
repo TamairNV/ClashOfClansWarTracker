@@ -232,7 +232,7 @@ class SQLManager:
                 SUM(wp.attacks_used) as total_attacks,
                 SUM(
                 CASE 
-                    WHEN w.war_type = 'cwl' THEN 1 - wp.attacks_used
+                    WHEN LOWER(w.war_type) = 'cwl' THEN 1 - wp.attacks_used
                     ELSE 2 - wp.attacks_used
                 END
             ) as missed_attacks,

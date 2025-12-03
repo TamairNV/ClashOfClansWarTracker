@@ -33,7 +33,15 @@ def roster():
         history = db.get_player_history(p['player_tag'], limit=10)
         total_wars = len(history)
         attacks_used = sum(w['attacks_used'] for w in history)
-        attacks_possible = total_wars * 2
+        
+        attacks_possible = 0
+        for w in history:
+            w_type = w.get('war_type', 'regular')
+            if w_type and w_type.lower() == 'cwl':
+                attacks_possible += 1
+            else:
+                attacks_possible += 2
+                
         participation = f"{attacks_used}/{attacks_possible}" if total_wars > 0 else "N/A"
 
         status_text, status_class = get_status(p, total_wars)

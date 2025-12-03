@@ -567,9 +567,13 @@ body {
 .cwl-row {
     background-color: rgba(168, 85, 247, 0.15) !important;
     /* Purple tint */
-    border-left: 3px solid #a855f7 !important;
+    border: 2px solid #a855f7 !important;
+    /* Full border */
+    box-shadow: inset 0 0 10px rgba(168, 85, 247, 0.2);
+    /* Inner glow */
 }
 
 .cwl-row:hover {
     background-color: rgba(168, 85, 247, 0.25) !important;
+    box-shadow: inset 0 0 15px rgba(168, 85, 247, 0.3);
 }

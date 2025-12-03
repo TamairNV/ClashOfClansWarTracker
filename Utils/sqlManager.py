@@ -230,15 +230,20 @@ class SQLManager:
                 SUM(wp.stars) as total_stars,
                 AVG(wp.destruction_percentage) as avg_destruction,
                 SUM(wp.attacks_used) as total_attacks,
-                SUM(CASE WHEN wp.attacks_used = 0 THEN 1 ELSE 0 END) as missed_attacks,
                 SUM(
-                    CASE 
-                        WHEN wp.stars = 6 THEN 2
-                        WHEN wp.stars IN (4, 5) THEN 1
-                        WHEN wp.stars = 3 AND wp.attacks_used = 1 THEN 1
-                        ELSE 0 
-                    END
-                ) as estimated_triples
+                CASE 
+                    WHEN w.war_type = 'cwl' THEN 1 - wp.attacks_used
+                    ELSE 2 - wp.attacks_used
+                END
+            ) as missed_attacks,
+            SUM(
+                CASE 
+                    WHEN wp.stars = 6 THEN 2
+                    WHEN wp.stars IN (4, 5) THEN 1
+                    WHEN wp.stars = 3 AND wp.attacks_used = 1 THEN 1
+                    ELSE 0 
+                END
+            ) as estimated_triples
             FROM war_performance wp
             JOIN wars w ON wp.war_id = w.war_id
             WHERE wp.player_tag = %s AND w.state = 'warEnded'

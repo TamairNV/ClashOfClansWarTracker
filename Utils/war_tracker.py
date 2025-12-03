@@ -12,6 +12,15 @@ async def main():
 
     try:
         await client.login(Config.COC_EMAIL, Config.COC_PASSWORD)
+        
+        # --- CLEANUP STALE WARS ---
+        print("🧹 Checking for stale wars...")
+        stale_wars = db.get_stale_wars()
+        for stale in stale_wars:
+            print(f"⚠️ Found stale war vs {stale['opponent_name']} (ID: {stale['war_id']}). Force closing...")
+            db.force_close_war(stale['war_id'])
+            print(f"✅ War {stale['war_id']} marked as ended.")
+            
         print(f"⚔️ Checking Current War for {Config.CLAN_TAG}...")
         war = await client.get_current_war(Config.CLAN_TAG)
 

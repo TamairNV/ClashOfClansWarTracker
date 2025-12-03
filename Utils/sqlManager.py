@@ -92,6 +92,16 @@ class SQLManager:
         self.execute(sql, (war_id, enemy_data['tag'], enemy_data['map_position'], enemy_data['town_hall'],
                            enemy_data['stars'], enemy_data['destruction']))
 
+    def get_stale_wars(self):
+        """Fetches active wars that should have ended."""
+        sql = "SELECT * FROM wars WHERE state IN ('inWar', 'preparation') AND end_time < NOW()"
+        return self.fetch_all(sql)
+
+    def force_close_war(self, war_id):
+        """Forcefully marks a war as ended."""
+        sql = "UPDATE wars SET state = 'warEnded' WHERE war_id = %s"
+        self.execute(sql, (war_id,))
+
     # --- ANALYTICS ---
 
     def get_all_active_players(self):

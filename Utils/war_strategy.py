@@ -1,200 +1,326 @@
-def calculate_hit_probability(attacker, defender):
+def calculate_pow(player):
     """
-    Calculates P(3*) based on TH differential and Player Trust Score.
-    Research Table 2 Implementation.
+    Player Offensive Weight (POW) Index.
+    POW = Town Hall Level + (Trust Score / 100)
     """
-    delta_th = attacker['th'] - defender['town_hall_level']
-    trust_multiplier = attacker.get('score', 50) / 50.0  # 1.0 is average skill
+    th = player.get('th', 0)
+    trust = player.get('score', 50)
+    return th + (trust / 100.0)
 
-    # Baseline P(3*) from Research (Conservative Update)
-    if delta_th >= 2:
-        base_prob = 0.99  # Bully (TH16 vs TH14)
-    elif delta_th == 1:
-        base_prob = 0.90  # Dip (TH16 vs TH15) - Reduced from 0.95
-    elif delta_th == 0:
-        base_prob = 0.40  # Peer (TH16 vs TH16) - Reduced from 0.50
-    elif delta_th == -1:
-        base_prob = 0.10  # Reach (TH15 vs TH16) - Reduced from 0.15
-    else:
-        base_prob = 0.01  # Suicide
-
-    # --- Map Rank Penalty ---
-    # If I am #5 and I hit #4, that is harder than hitting #5.
-    # If I am #5 and I hit #10, that is easier (cleanup).
-    
-    attacker_rank = attacker.get('map_position', 999)
-    defender_rank = defender.get('map_position', 999)
-    
-    rank_diff = defender_rank - attacker_rank # Positive = Hitting Lower (Easier), Negative = Hitting Higher (Harder)
-    
-    # Penalty for hitting higher (e.g. #5 hitting #1 -> diff = -4)
-    if rank_diff < 0:
-        rank_penalty = abs(rank_diff) * 0.05 # 5% penalty per rank spot
-        base_prob -= rank_penalty
-    
-    # Bonus for hitting lower (Cleanup)
-    elif rank_diff > 0:
-        rank_bonus = min(0.20, rank_diff * 0.02) # Cap bonus at 20%
-        base_prob += rank_bonus
-
-    # Adjust for skill (Triple Rate)
-    # Baseline Triple Rate is assumed to be 30% (0.30).
-    # If player has 50% triple rate, they get a boost.
-    # If player has 10% triple rate, they get a penalty.
-    
-    triple_rate = attacker.get('triple_rate', 0.30)
-    
-    # Skill Factor: (Actual Rate - Baseline)
-    # e.g. 0.50 - 0.30 = +0.20 boost
-    # e.g. 0.10 - 0.30 = -0.20 penalty
-    skill_factor = triple_rate - 0.30
-    
-    # Dampen the skill factor slightly so it's not too extreme? 
-    # Actually, let's let it be raw. If you triple 80% of the time, you deserve a +50% boost.
-    # But we cap the boost/penalty to avoid breaking math.
-    skill_factor = max(-0.25, min(0.40, skill_factor))
-    
-    final_prob = base_prob + skill_factor
-    
-    return min(0.95, max(0.01, final_prob))
-
-
-def detect_mismatch(our_team, enemy_team):
+def calculate_tds(target, total_targets):
     """
-    Protocol A: The 'Mismatch' Protocol.
-    Checks if enemy has significantly more Top-Tier THs.
+    Target Difficulty Score (TDS) Index.
+    TDS = Town Hall Level + (1 - MapRank/MapSize)
     """
-    # Count TH16s (or whatever is max)
-    our_max = sum(1 for p in our_team if p['th'] >= 16)
-    their_max = sum(1 for p in enemy_team if p['town_hall_level'] >= 16)
+    th = target.get('town_hall_level', 0)
+    rank = target.get('map_position', 1)
+    # Normalize rank impact (0 to 1)
+    rank_factor = 1.0 - (rank / max(1, total_targets))
+    return th + rank_factor
 
-    # If they have 3+ more Max THs, trigger Shift
-    if their_max > our_max + 2:
-        return True, their_max - our_max
-    return False, 0
-
-
-def get_war_recommendations(our_team, enemy_team, war_context=None):
+def strategy_cw(our_team, enemy_team, war_context):
+    """
+    Standard Clan War (CW) Algorithm.
+    Goal: Absolute Star Maximization (3-Stars).
+    """
     recommendations = []
-    
-    # Default context if None
-    if not war_context:
-        war_context = {'hours_left': 24, 'score_diff': 0}
-
-    hours_left = war_context.get('hours_left', 24)
-    
-    # "Secure the Win" Mode:
-    # If < 4 hours left, we prioritize cleaning up lower bases over risking top bases.
-    secure_win_mode = hours_left <= 4
-
-    # Sort lists
-    our_team_sorted = sorted(our_team, key=lambda x: (x['th'], x['score']), reverse=True)
-    enemy_team_sorted = sorted(enemy_team, key=lambda x: x['map_position'])
-
-    # Detect Protocol
-    is_mismatch, shift_n = detect_mismatch(our_team_sorted, enemy_team_sorted)
-
-    # Track assigned targets to prevent double-booking (simple greedy approach)
     assigned_targets = set()
+    
+    # Calculate and store metrics for display
+    for p in our_team:
+        p['pow'] = calculate_pow(p)
+        
+    for e in enemy_team:
+        e['tds'] = calculate_tds(e, len(enemy_team))
 
-    for i, player in enumerate(our_team_sorted):
+    # Sort by POW and TDS
+    our_team_sorted = sorted(our_team, key=lambda x: x['pow'], reverse=True)
+    enemy_team_sorted = sorted(enemy_team, key=lambda x: x['tds'], reverse=True)
+    
+    # Phase 1: Initialization (Bottom 25% Enemies -> Lowest POW Players)
+    # Only applies if attacks haven't started (fresh war)
+    # But for simplicity, we apply this logic generally for fresh hits.
+    
+    # Phase 2: Dynamic Cleanup/Pinch
+    # Prioritize 1-star bases, then low % 2-star bases.
+    
+    # We will use a greedy approach based on Marginal Star Gain.
+    
+    for player in our_team_sorted:
         rec = {
             'player': player,
             'target': None,
             'reason': "Hold for cleanup",
             'confidence': 0
         }
-
+        
         if player['attacks_used'] >= 2:
             rec['reason'] = "✅ Done"
             recommendations.append(rec)
             continue
-
-        # --- STRATEGY ENGINE ---
-
+            
         best_target = None
         best_score = -1
         strategy_type = ""
-
-        # 1. MISMATCH PROTOCOL (The "Mirror Plus")
-        # If we are outmatched, bottom players hit TOP bases for safe 2-stars.
-        if is_mismatch and i >= (len(our_team_sorted) - shift_n):
-            # This is a sacrificial lamb (Bottom player)
-            # Find a top base not yet 2-starred
-            for enemy in enemy_team_sorted[:shift_n]:  # Look at top N enemies
-                if enemy['opponent_tag'] in assigned_targets: continue # Skip if already assigned
-                
-                if enemy['stars'] < 2:
-                    best_target = enemy
-                    strategy_type = "🛡️ SCOUT/2★ (Mismatch Strat)"
-                    rec['confidence'] = 85  # High confidence in 2-star
-                    break
-
-        # 2. STANDARD PROTOCOL (Bottom-Up Wave)
-        if not best_target:
-            # Search for the highest Value Over Replacement
-            # We prefer: High % Chance of 3-Star on a base that isn't cleared.
-
-            potential_targets = []
-
-            for enemy in enemy_team_sorted:
-                if enemy['stars'] == 3: continue  # Skip cleared
-                if enemy['opponent_tag'] in assigned_targets: continue # Skip if already assigned
-
-                prob = calculate_hit_probability(player, enemy)
-
-                # Scoring Heuristic:
-                # Value = Probability * (Stars to Gain)
-                stars_to_gain = 3 - enemy['stars']
-                expected_value = prob * stars_to_gain
-                
-                # --- SECURE THE WIN LOGIC ---
-                if secure_win_mode:
-                    # If target is already 2-starred, heavily penalize unless it's a guaranteed 3-star
-                    if enemy['stars'] == 2:
-                        expected_value *= 0.2 # Massive penalty for hitting 2-star bases
-                        
-                    # If target is low (Dip) and not cleared, boost it to ensure cleanup
-                    # We want top players to dip and clear lower bases
-                    if prob > 0.9:
-                        expected_value *= 2.0 # Prioritize guaranteed stars
-
-                # Penalty for "Dipping Too Deep" (Wasting a TH16 on a TH12)
-                # In Secure Win Mode, we relax this penalty because stars matter more than efficiency
-                th_waste = max(0, player['th'] - enemy['town_hall_level'] - 1)
-                efficiency_penalty = th_waste * 0.2
-                
-                if secure_win_mode:
-                    efficiency_penalty *= 0.5 # Lower penalty late in war
-
-                final_score = expected_value - efficiency_penalty
-
-                potential_targets.append((final_score, prob, enemy))
-
-            # Pick best
-            potential_targets.sort(key=lambda x: x[0], reverse=True)
-
-            if potential_targets:
-                score, prob, target = potential_targets[0]
-                best_target = target
+        
+        # Search for best target
+        for enemy in enemy_team_sorted:
+            if enemy['opponent_tag'] in assigned_targets: continue
+            if enemy['stars'] == 3: continue # Skip cleared
+            
+            # Calculate Probability (using existing logic or simplified)
+            # We reuse the existing probability logic but adapted
+            prob = calculate_hit_probability(player, enemy)
+            
+            stars_to_gain = 3 - enemy['stars']
+            expected_value = prob * stars_to_gain
+            
+            # Heuristics from Research
+            
+            # 1. Cleanup Priority
+            if enemy['stars'] == 1:
+                expected_value *= 1.5 # Boost 1-star cleanup
+            
+            # 2. Pinch/Scout Logic
+            # If high TDS and unattacked, and player is low POW -> Scout?
+            # For now, we focus on maximizing EV.
+            
+            # 3. Time Fail / Meta Army (Not implemented yet as we lack army data)
+            
+            if expected_value > best_score:
+                best_score = expected_value
+                best_target = enemy
                 rec['confidence'] = int(prob * 100)
-
-                if prob > 0.8:
-                    strategy_type = "🎯 DIP (Guaranteed 3★)"
-                elif prob > 0.5:
-                    strategy_type = "⚔️ ATTACK (Good Match)"
+                
+                if prob > 0.9:
+                    strategy_type = "🧹 CLEANUP"
+                elif prob > 0.6:
+                    strategy_type = "⚔️ ATTACK"
                 else:
-                    strategy_type = "⚠️ REACH (High Risk)"
-                    
-                if secure_win_mode and target['stars'] < 3 and prob > 0.9:
-                     strategy_type = "🧹 CLEANUP (Secure Win)"
+                    strategy_type = "⚠️ REACH"
 
-        # Assign
         if best_target:
             rec['target'] = best_target
             rec['reason'] = strategy_type
             assigned_targets.add(best_target['opponent_tag'])
-
+            
         recommendations.append(rec)
-
+        
     return recommendations
+
+def strategy_cwl(our_team, enemy_team, war_context):
+    """
+    Clan War League (CWL) Algorithm.
+    Goal: Maximize Medals (2-Star Assurance + Dip 3-Stars).
+    """
+    recommendations = []
+    assigned_targets = set()
+    
+    # Calculate and store metrics for display
+    for p in our_team:
+        p['pow'] = calculate_pow(p)
+        
+    for e in enemy_team:
+        e['tds'] = calculate_tds(e, len(enemy_team))
+        
+    # Sort by POW and TDS
+    our_team_sorted = sorted(our_team, key=lambda x: x['pow'], reverse=True)
+    enemy_team_sorted = sorted(enemy_team, key=lambda x: x['tds'], reverse=True)
+    
+    # We need to assign EVERYONE (1 attack each).
+    # Iterate through enemies from High TDS down.
+    
+    # Create a pool of available players
+    available_players = [p for p in our_team_sorted if p['attacks_used'] == 0]
+    # Sort available players by POW (High to Low)
+    available_players.sort(key=calculate_pow, reverse=True)
+    
+    # We will assign targets to players.
+    # But the algorithm says "Iterate through Enemy Roster".
+    
+    # Mapping: Target -> Player
+    assignments = {}
+    
+    # 1. Mismatch / Safe 2-Star Logic
+    # For High TDS bases (Target TH >= Player TH + 2)
+    # We want the LOWEST POW player who can get 2 stars.
+    
+    # 2. Mid-Range (Peer)
+    # Assign High POW for secure 2-star.
+    
+    # 3. Dip (3-Star Guarantee)
+    # Assign High POW to Low targets.
+    
+    # Let's try a simplified pass:
+    # We want to maximize total stars/medals.
+    
+    # Pass 1: Secure 3-Stars (Dips)
+    # Assign Highest POW players to targets they can 3-star (TH - 1)
+    # But wait, the prompt says "Strategic Dip" comes AFTER "Initial Assignment".
+    
+    # Let's follow the prompt's order:
+    # "Iterate through the Enemy_Roster from high TDS (Target Rank 1) down."
+    
+    for enemy in enemy_team_sorted:
+        if enemy['opponent_tag'] in assigned_targets: continue
+        if enemy['stars'] == 3: continue # Skip cleared
+        if not available_players: break
+        
+        target_th = enemy['town_hall_level']
+        assigned_player = None
+        reason = ""
+        
+        # a. Mismatch (Target TH >= P_TH + 2) -> Lowest POW with >85% 2-star prob
+        # We don't have a specific 2-star prob calculator, but we can proxy.
+        # Proxy: If P_TH >= Target_TH - 2, maybe?
+        # Actually, a TH12 can 2-star a TH16 with Blimp.
+        # So almost anyone can 2-star if skilled.
+        # We'll look for the Lowest POW player.
+        
+        # Find candidates for this target
+        candidates = []
+        for p in available_players:
+            p_th = p['th']
+            pow_score = calculate_pow(p)
+            
+            # Calculate 2-star prob (Proxy)
+            # Base 2-star is easier.
+            prob_2star = 0.90 # Assume high base
+            if target_th > p_th:
+                prob_2star -= (target_th - p_th) * 0.10
+            
+            # HRI Check (Trust Score)
+            if p.get('score', 50) < 70:
+                prob_2star -= 0.20
+                
+            candidates.append((p, prob_2star, pow_score))
+            
+        # Sort candidates
+        # We want: High Prob, Low POW
+        candidates.sort(key=lambda x: (x[1] > 0.85, -x[2])) # True (High Prob) first, then Low POW (negative sort?)
+        # Wait, sorted(reverse=True) puts True first.
+        # Then we want Lowest POW. So we want smallest POW to be first?
+        # No, if we reverse=True:
+        # (True, -POW) -> True comes before False.
+        # For POW: -5 vs -10. -5 is bigger. So -5 comes first.
+        # We want Lowest POW. So we want -POW to be LARGEST (closest to 0).
+        # So High POW = 100. Low POW = 50.
+        # -100 vs -50. -50 is bigger.
+        # So reverse=True puts Low POW first. Correct.
+        
+        candidates.sort(key=lambda x: (x[1] > 0.85, -x[2]), reverse=True)
+        
+        if candidates:
+            best_candidate = candidates[0] # Best fit
+            p, prob, pow_s = best_candidate
+            
+            if prob > 0.85:
+                # Good match
+                assigned_player = p
+                reason = "🛡️ SAFE 2★"
+                if p['th'] >= target_th:
+                     reason = "⚔️ PEER HIT"
+                if p['th'] > target_th:
+                    reason = "🎯 DIP 3★"
+            else:
+                # If we can't find a safe 2-star, maybe we skip this hard base for now?
+                # Or we burn a high POW?
+                # For now, take the best we have.
+                assigned_player = p
+                reason = "⚠️ BEST EFFORT"
+
+        if assigned_player:
+            assignments[assigned_player['player_tag']] = (enemy, reason)
+            assigned_targets.add(enemy['opponent_tag'])
+            available_players.remove(assigned_player)
+
+    # Compile recommendations
+    for player in our_team:
+        rec = {
+            'player': player,
+            'target': None,
+            'reason': "Reserve",
+            'confidence': 0
+        }
+        
+        if player['attacks_used'] >= 1:
+            rec['reason'] = "✅ Done"
+            recommendations.append(rec)
+            continue
+            
+        if player['player_tag'] in assignments:
+            target, reason = assignments[player['player_tag']]
+            rec['target'] = target
+            rec['reason'] = reason
+            # Recalculate confidence for display
+            rec['confidence'] = int(calculate_hit_probability(player, target) * 100)
+            
+        recommendations.append(rec)
+        
+    return recommendations
+
+def calculate_hit_probability(attacker, defender):
+    """
+    Calculates P(3*) based on TH differential and Player Trust Score.
+    Research Table 2 Implementation.
+    """
+    delta_th = attacker['th'] - defender['town_hall_level']
+    
+    # Baseline P(3*) from Research (Conservative Update)
+    if delta_th >= 2:
+        base_prob = 0.99  # Bully (TH16 vs TH14)
+    elif delta_th == 1:
+        base_prob = 0.90  # Dip (TH16 vs TH15)
+    elif delta_th == 0:
+        base_prob = 0.40  # Peer (TH16 vs TH16)
+    elif delta_th == -1:
+        base_prob = 0.10  # Reach (TH15 vs TH16)
+    else:
+        base_prob = 0.01  # Suicide
+
+    # --- Map Rank Penalty ---
+    attacker_rank = attacker.get('map_position', 999)
+    defender_rank = defender.get('map_position', 999)
+    
+    rank_diff = defender_rank - attacker_rank 
+    
+    if rank_diff < 0:
+        rank_penalty = abs(rank_diff) * 0.05 
+        base_prob -= rank_penalty
+    elif rank_diff > 0:
+        rank_bonus = min(0.20, rank_diff * 0.02) 
+        base_prob += rank_bonus
+
+    # Adjust for skill (Triple Rate)
+    # Default to 0.30 if missing or 0 (new player)
+    triple_rate = attacker.get('triple_rate', 0.30)
+    if triple_rate == 0: triple_rate = 0.30
+    
+    skill_factor = triple_rate - 0.30
+    skill_factor = max(-0.25, min(0.40, skill_factor))
+    
+    final_prob = base_prob + skill_factor
+    
+    # Ensure reasonable bounds (e.g. never below 5% for a peer hit)
+    min_prob = 0.05
+    if delta_th >= 0: min_prob = 0.20
+    
+    return min(0.95, max(min_prob, final_prob))
+
+def get_war_recommendations(our_team, enemy_team, war_context=None):
+    if not war_context:
+        war_context = {'hours_left': 24, 'score_diff': 0, 'war_type': 'regular'}
+        
+    # Assign map_position to our_team (assuming they are not sorted or missing it)
+    # Map order is usually TH desc, then Score/Trophies desc.
+    # We'll sort them and assign 1..N
+    our_team_sorted_for_rank = sorted(our_team, key=lambda x: (x['th'], x['score']), reverse=True)
+    for i, p in enumerate(our_team_sorted_for_rank):
+        p['map_position'] = i + 1
+        
+    war_type = war_context.get('war_type', 'regular').lower()
+    
+    if war_type == 'cwl':
+        return strategy_cwl(our_team, enemy_team, war_context)
+    else:
+        return strategy_cw(our_team, enemy_team, war_context)

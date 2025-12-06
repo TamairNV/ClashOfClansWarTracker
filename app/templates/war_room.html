@@ -40,6 +40,23 @@
     </header>
 
     <div class="container">
+        <!-- Strategy Legend -->
+        <div class="strategy-legend">
+            <h3>📊 Strategy Metrics</h3>
+            <div class="legend-grid">
+                <div class="legend-item">
+                    <span class="legend-title">POW (Player Offensive Weight)</span>
+                    <span class="legend-desc">Combines <strong>Town Hall Level</strong> + <strong>Trust Score</strong>
+                        to measure attacking power.</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-title">TDS (Target Difficulty Score)</span>
+                    <span class="legend-desc">Combines <strong>Town Hall Level</strong> + <strong>Map Position</strong>
+                        to measure defense strength.</span>
+                </div>
+            </div>
+        </div>
+
         <div class="strategy-list">
             {% for strat in strategies %}
             <div class="strategy-card {% if strat.player.attacks_used >= 2 %}done{% endif %}">
@@ -57,17 +74,24 @@
                 <!-- CENTER: Logic -->
                 <div class="instruction-section">
                     <div class="arrow">➔</div>
-                    <span class="strat-reason">{{ strat.reason }}</span>
+                    <div class="strat-details">
+                        <span class="strat-reason">{{ strat.reason }}</span>
+                        <small style="color: #aaa; display: block; margin-top: 4px;">
+                            {% if strat.target %}
+                            POW: {{ "%.1f"|format(strat.player.get('pow', 0)) }} vs TDS: {{
+                            "%.1f"|format(strat.target.get('tds', 0)) }}
+                            {% endif %}
+                        </small>
+                    </div>
 
                     <!-- Confidence Meter -->
                     {% if strat.target %}
                     <div class="confidence-wrapper">
                         <div class="confidence-bar"
-                            style="width: {{ strat.confidence }}%;
-                            background: {% if strat.confidence > 80 %}#4CAF50{% elif strat.confidence > 50 %}#FFC107{% else %}#F44336{% endif %};">
+                            style="width: {{ strat.confidence }}%; background: {% if strat.confidence > 80 %}#4CAF50{% elif strat.confidence > 50 %}#FFC107{% else %}#F44336{% endif %};">
                         </div>
                     </div>
-                    <span class="confidence-text">{{ strat.confidence }}% Win Rate</span>
+                    <span class="confidence-text">{{ strat.confidence }}% Probability</span>
                     {% endif %}
                 </div>
 

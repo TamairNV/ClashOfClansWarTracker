@@ -125,6 +125,10 @@ class SQLManager:
     def update_trust_score(self, player_tag, score):
         self.execute("UPDATE players SET trust_score = %s WHERE player_tag = %s", (score, player_tag))
 
+    def update_player_timezone(self, player_tag, timezone, country, confidence):
+        sql = "UPDATE players SET guessed_timezone=%s, guessed_country=%s, timezone_confidence=%s WHERE player_tag=%s"
+        self.execute(sql, (timezone, country, confidence, player_tag))
+
     def get_player(self, player_tag):
         return self.fetch_one("SELECT * FROM players WHERE player_tag = %s", (player_tag,))
 

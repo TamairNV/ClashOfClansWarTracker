@@ -95,7 +95,8 @@ def war_room():
 
     war_context = {
         'hours_left': hours_left,
-        'score_diff': 0 # We could calculate this if we had enemy stars, but for now time is key
+        'score_diff': 0,
+        'war_type': active_war.get('war_type', 'regular')
     }
 
     # Calculate Triple Rate for each player

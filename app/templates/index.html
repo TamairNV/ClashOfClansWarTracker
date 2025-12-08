@@ -47,8 +47,8 @@
             font-weight: bold;
         }
 
-        .btn-discord {
-            background-color: #5865F2;
+        .btn-whatsapp {
+            background-color: #25D366;
             color: white;
             padding: 1rem 2rem;
             font-size: 1.2rem;
@@ -62,8 +62,8 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
 
-        .btn-discord:hover {
-            background-color: #4752C4;
+        .btn-whatsapp:hover {
+            background-color: #128C7E;
             transform: scale(1.05);
         }
 
@@ -83,6 +83,12 @@
         .btn-enter:hover {
             transform: scale(1.05);
             background-color: #43A047;
+        }
+
+        .btn-icon {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
         }
 
         /* Mobile Responsiveness */
@@ -107,7 +113,7 @@
                 align-items: center;
             }
 
-            .btn-discord,
+            .btn-whatsapp,
             .btn-enter {
                 width: 100%;
                 justify-content: center;
@@ -141,8 +147,9 @@
         <p class="landing-subtitle">Dominate Wars. Track Stats. Climb the Ranks.</p>
 
         <div class="actions">
-            <a href="https://discord.gg/xYdQkCwjwJ" target="_blank" class="btn-discord">
-                Join Discord Server
+            <a href="https://chat.whatsapp.com/FDw1sBTyPAxDKm8STNYxPQ" target="_blank" class="btn-whatsapp">
+                <img src="{{ url_for('static', filename='icons/whatsapp.png') }}" class="btn-icon">
+                Join WhatsApp Group
             </a>
             <a href="{{ url_for('main.roster') }}" class="btn-enter">
                 View Roster

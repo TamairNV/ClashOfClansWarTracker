@@ -411,9 +411,7 @@
                 labels: Array.from({ length: 24 }, (_, i) => i + 'h'),
                 datasets: [{
                     label: 'Activity Level',
-                    data: {{ activity_hours | tojson }
-        }
-            ,
+                    data: {{ activity_hours | tojson }},
             backgroundColor: 'rgba(250, 204, 21, 0.2)',
             borderColor: '#facc15',
             pointBackgroundColor: '#facc15',

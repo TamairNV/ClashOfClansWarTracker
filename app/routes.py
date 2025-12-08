@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request
 from config import Config
 from Utils.sqlManager import SQLManager
 from Utils.war_strategy import get_war_recommendations
@@ -46,7 +46,6 @@ def roster():
 
         status_text, status_class = get_status(p, total_wars)
         clean_tag = p['player_tag'].replace("#", "")
-        # deep_link = f"clashofclans://action=OpenPlayerProfile&tag=%23{clean_tag}"
         deep_link = f"/player/{clean_tag}"
 
         roster_data.append({
@@ -55,12 +54,25 @@ def roster():
             'participation': participation,
             'donated': p.get('last_known_donations', 0),
             'received': p.get('last_known_received', 0),
+            'activity_score': p.get('activity_score', 0),
             'total_wars': total_wars, 'status': status_text, 'status_class': status_class,
             'link': deep_link, 'is_in_clan': p['is_in_clan']
         })
     db.close()
-    roster_data.sort(key=lambda x: (x['is_in_clan'], x['score']), reverse=True)
-    return render_template('roster.html', players=roster_data)
+    
+    # Sorting Logic
+    sort_by = request.args.get('sort', 'trust') # Default to Trust Score
+    
+    if sort_by == 'th':
+        roster_data.sort(key=lambda x: (x['is_in_clan'], x['th'], x['score']), reverse=True)
+    elif sort_by == 'donations':
+        roster_data.sort(key=lambda x: (x['is_in_clan'], x['donated']), reverse=True)
+    elif sort_by == 'activity':
+        roster_data.sort(key=lambda x: (x['is_in_clan'], x['activity_score']), reverse=True)
+    else: # 'trust' or default
+        roster_data.sort(key=lambda x: (x['is_in_clan'], x['score']), reverse=True)
+
+    return render_template('roster.html', players=roster_data, current_sort=sort_by)
 
 
 @main.route('/war')

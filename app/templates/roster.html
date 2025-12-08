@@ -36,6 +36,19 @@
     </div>
 
     <div class="container">
+        <!-- SORTING DROPDOWN -->
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+            <select id="sortSelect" onchange="window.location.href='?sort=' + this.value"
+                style="padding: 10px; border-radius: 8px; background: #222; color: white; border: 1px solid #444; font-family: 'Lilita One'; font-size: 1rem;">
+                <option value="th" {% if current_sort=='th' %}selected{% endif %}>Sort by: Town Hall</option>
+                <option value="trust" {% if current_sort=='trust' %}selected{% endif %}>Sort by: Trust Score</option>
+                <option value="donations" {% if current_sort=='donations' %}selected{% endif %}>Sort by: Donations
+                </option>
+                <option value="activity" {% if current_sort=='activity' %}selected{% endif %}>Sort by: Most Online
+                </option>
+            </select>
+        </div>
+
         <div class="roster-grid">
             <!-- TABLE HEADERS -->
             <div class="header-row">

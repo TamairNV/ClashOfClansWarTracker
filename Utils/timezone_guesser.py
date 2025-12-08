@@ -36,7 +36,7 @@ class TimezoneGuesser:
         Returns: (timezone_str, country_guess, confidence_score)
         """
         if not timestamps or len(timestamps) < 5:
-            return None, None, 0.0
+            return None, None, 0.0, None
 
         # 1. Extract Hours (0-23)
         hours = []
@@ -50,7 +50,7 @@ class TimezoneGuesser:
                 hours.append(ts.hour)
         
         if not hours:
-            return None, None, 0.0
+            return None, None, 0.0, None
 
         # 2. Find Peak Activity Hour (UTC)
         # We use a circular mean or just the mode/median of the "active window"
@@ -108,7 +108,17 @@ class TimezoneGuesser:
         
         confidence = (sample_size_score * 0.4) + (concentration_score * 0.6)
         
-        return timezone_str, country, round(confidence * 100, 1)
+        # 6. Format Favorite Time Label (UTC)
+        # User requested actual online time, not a local guess.
+        # peak_utc is the center of the 4-hour window.
+        
+        start_utc = int((peak_utc - 2) % 24)
+        end_utc = int((peak_utc + 2) % 24)
+        
+        # Format: "14:00 - 18:00 UTC"
+        time_label = f"{start_utc:02d}:00 - {end_utc:02d}:00 UTC"
+        
+        return timezone_str, country, round(confidence * 100, 1), time_label
 
 if __name__ == "__main__":
     # Test

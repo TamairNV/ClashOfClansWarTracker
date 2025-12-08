@@ -147,17 +147,24 @@ def main():
         score = calculate_trust_score(player['town_hall_level'], history, player.get('last_active_time'))
         db.update_trust_score(player['player_tag'], score)
         
-        # 2. Timezone Guessing
+        # 2. Timezone Guessing & Activity Score
         # Fetch activity log
-        activity_log = db.get_player_activity_history(player['player_tag'], limit=50)
+        activity_log = db.get_player_activity_history(player['player_tag'], limit=100) # Increased limit for better accuracy
         timestamps = [row['timestamp'] for row in activity_log]
         
-        tz, country, conf = guesser.guess_timezone(timestamps)
+        # Activity Score: Simple frequency metric (events per day over last 7 days?)
+        # Let's just use raw count of events in last 7 days
+        recent_events = [t for t in timestamps if (datetime.now() - t).days < 7]
+        activity_score = len(recent_events)
+        
+        tz, country, conf, time_label = guesser.guess_timezone(timestamps)
         if tz:
-            db.update_player_timezone(player['player_tag'], tz, country, conf)
-            print(f"Updated {player['name']}: Score={score}, Loc={country} ({conf}%)")
+            db.update_player_timezone(player['player_tag'], tz, country, conf, time_label, activity_score)
+            print(f"Updated {player['name']}: {score}, {country}, {time_label}, Act:{activity_score}")
         else:
-            print(f"Updated {player['name']}: Score={score} (No Loc Data)")
+             # Even if no timezone, save activity score
+            db.update_player_timezone(player['player_tag'], None, None, 0, None, activity_score)
+            print(f"Updated {player['name']}: {score} (No Loc), Act:{activity_score}")
 
     db.close()
 

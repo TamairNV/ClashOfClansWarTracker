@@ -8,7 +8,7 @@ main = Blueprint('main', __name__)
 
 def get_status(player, wars_played):
     if not player['is_in_clan']: return "LEFT", "status-left"
-    score = player.get('trust_score', 50)
+    score = player.get('trust_score') or 50
     if wars_played == 0: return "NEW", "status-new"
     if score >= 80:
         return "ROSTER", "status-war"
@@ -197,3 +197,39 @@ def player_profile(tag):
                            war_dates=war_dates,
                            war_stars=war_stars,
                            war_destruction=war_destruction)
+
+
+@main.route('/stats')
+def clan_stats():
+    db = SQLManager(Config.DB_HOST, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME)
+    
+    # 1. War History & Trend
+    history = db.get_clan_war_history_stats(limit=20)
+    
+    # Process for Trend Chart (Reverse to show oldest -> newest)
+    trend_dates = []
+    trend_stars = []
+    trend_dest = []
+    
+    for war in reversed(history):
+        trend_dates.append(war['start_time'].strftime('%m-%d'))
+        # Use Avg Stars (rounded) for smoother trend across CWL/Regular
+        val = war['avg_stars'] or 0
+        trend_stars.append(round(val, 2))
+        trend_dest.append(war['avg_destruction'] or 0)
+        
+    # 2. Activity Clock
+    activity_data = db.get_clan_activity_distribution()
+    
+    # 3. Win/Loss Ratio
+    win_loss = db.get_clan_win_loss_ratio(limit=50)
+    
+    db.close()
+    
+    return render_template('clan_stats.html',
+                           history=history,
+                           trend_dates=trend_dates,
+                           trend_stars=trend_stars,
+                           trend_dest=trend_dest,
+                           activity_data=activity_data,
+                           win_loss=win_loss)

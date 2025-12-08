@@ -13,6 +13,7 @@
 <body>
 
     <!-- NAV BAR -->
+    <!-- NAV BAR -->
     <nav class="nav-bar">
         <a href="{{ url_for('main.index') }}" class="nav-item">
             Home
@@ -24,6 +25,9 @@
         <a href="{{ url_for('main.war_room') }}" class="nav-item">
             <img src="{{ url_for('static', filename='icons/swords_icon.png') }}" class="icon"
                 onerror="this.style.display='none'"> War Room
+        </a>
+        <a href="{{ url_for('main.clan_stats') }}" class="nav-item">
+            Stats
         </a>
     </nav>
 

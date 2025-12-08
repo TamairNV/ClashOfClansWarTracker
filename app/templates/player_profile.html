@@ -218,6 +218,9 @@
 
     <!-- NAV BAR -->
     <nav class="nav-bar">
+        <a href="{{ url_for('main.index') }}" class="nav-item">
+            Home
+        </a>
         <a href="{{ url_for('main.roster') }}" class="nav-item">
             <img src="{{ url_for('static', filename='icons/roster_icon.png') }}" class="icon"
                 onerror="this.style.display='none'"> Roster
@@ -225,6 +228,9 @@
         <a href="{{ url_for('main.war_room') }}" class="nav-item">
             <img src="{{ url_for('static', filename='icons/swords_icon.png') }}" class="icon"
                 onerror="this.style.display='none'"> War Room
+        </a>
+        <a href="{{ url_for('main.clan_stats') }}" class="nav-item">
+            Stats
         </a>
     </nav>
 
@@ -405,8 +411,9 @@
                 labels: Array.from({ length: 24 }, (_, i) => i + 'h'),
                 datasets: [{
                     label: 'Activity Level',
-                    data: {{ activity_hours | tojson }}
-        ,
+                    data: {{ activity_hours | tojson }
+        }
+            ,
             backgroundColor: 'rgba(250, 204, 21, 0.2)',
             borderColor: '#facc15',
             pointBackgroundColor: '#facc15',

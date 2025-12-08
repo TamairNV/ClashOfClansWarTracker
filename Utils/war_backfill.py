@@ -23,13 +23,18 @@ async def main():
             print(f"Processing war vs {war.opponent.name} ({war.end_time})")
 
             # Prepare data
+            result_map = {'win': 'win', 'lose': 'lose', 'tie': 'draw'}
+            api_result = getattr(war, 'result', None)
+            clean_result = result_map.get(api_result, 'draw') if api_result else None
+
             war_data = {
                 'opponent_name': war.opponent.name,
                 'opponent_tag': war.opponent.tag,
                 'type': 'regular',  # War log doesn't always specify type well, default regular
                 'state': 'warEnded',
                 'start_time': war.end_time.replace(days=2),  # Approx start time (End - 48h)
-                'end_time': war.end_time
+                'end_time': war.end_time,
+                'result': clean_result
             }
 
             # Save to DB

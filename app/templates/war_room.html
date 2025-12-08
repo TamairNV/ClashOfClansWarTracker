@@ -17,10 +17,15 @@
             Home
         </a>
         <a href="{{ url_for('main.roster') }}" class="nav-item">
-            <img src="{{ url_for('static', filename='icons/roster_icon.png') }}" class="icon"> Roster
+            <img src="{{ url_for('static', filename='icons/roster_icon.png') }}" class="icon"
+                onerror="this.style.display='none'"> Roster
         </a>
         <a href="{{ url_for('main.war_room') }}" class="nav-item active">
-            <img src="{{ url_for('static', filename='icons/swords_icon.png') }}" class="icon"> War Room
+            <img src="{{ url_for('static', filename='icons/swords_icon.png') }}" class="icon"
+                onerror="this.style.display='none'"> War Room
+        </a>
+        <a href="{{ url_for('main.clan_stats') }}" class="nav-item">
+            Stats
         </a>
     </nav>
 

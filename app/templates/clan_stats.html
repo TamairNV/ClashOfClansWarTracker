@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clan Analytics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='icons/roster_icon.png') }}">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .stats-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .chart-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 769px) {
+            .chart-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #333;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-title {
+            color: var(--coc-yellow);
+            font-family: 'Lilita One', cursive;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid #333;
+            color: #ddd;
+        }
+
+        .history-table th {
+            background: #333;
+            color: var(--coc-yellow);
+            font-family: 'Lilita One', cursive;
+            text-transform: uppercase;
+        }
+
+        .result-win {
+            color: #4ade80;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .result-lose,
+        .result-loss {
+            color: #f87171;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .result-draw {
+            color: #facc15;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .big-number {
+            font-family: 'Lilita One';
+            font-size: 3rem;
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAV BAR -->
+    <nav class="nav-bar">
+        <a href="{{ url_for('main.index') }}" class="nav-item">
+            Home
+        </a>
+        <a href="{{ url_for('main.roster') }}" class="nav-item">
+            <img src="{{ url_for('static', filename='icons/roster_icon.png') }}" class="icon"
+                onerror="this.style.display='none'"> Roster
+        </a>
+        <a href="{{ url_for('main.war_room') }}" class="nav-item">
+            <img src="{{ url_for('static', filename='icons/swords_icon.png') }}" class="icon"
+                onerror="this.style.display='none'"> War Room
+        </a>
+        <a href="{{ url_for('main.clan_stats') }}" class="nav-item active">
+            Stats
+        </a>
+    </nav>
+
+    <!-- HERO HEADER -->
+    <div class="hero-banner">
+        <div class="hero-content">
+            <h1>CLAN ANALYTICS</h1>
+            <p>War Performance & Activity Trends</p>
+        </div>
+    </div>
+
+    <div class="stats-container">
+
+        <!-- Top Row: Win Rate & Activity -->
+        <div class="chart-row">
+            <!-- Win/Loss Ratio -->
+            <div class="chart-card" style="display: flex; flex-direction: column; align-items: center;">
+                <div class="chart-title">WIN / LOSS RATIO (Last 50)</div>
+                <div style="position: relative; height: 300px; width: 100%; display: flex; justify-content: center;">
+                    <canvas id="winLossChart"></canvas>
+                </div>
+                <div style="margin-top: 20px; text-align: center;">
+                    <span style="color: #666;">Total Wars Tracked: </span>
+                    <span style="color: #fff; font-weight: bold;">{{ (win_loss.wins or 0) + (win_loss.losses or 0) +
+                        (win_loss.draws or 0) }}</span>
+                </div>
+            </div>
+
+            <!-- Global Activity Clock -->
+            <div class="chart-card">
+                <div class="chart-title">CLAN ACTIVITY CLOCK (UTC)</div>
+                <p style="text-align: center; color: #aaa; font-size: 0.9rem; margin-bottom: 10px;">
+                    When is the clan most active globally?
+                </p>
+                <div style="position: relative; height: 300px;">
+                    <canvas id="globalActivityChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle Row: Performance Trend -->
+        <div class="chart-card">
+            <div class="chart-title">WAR PERFORMANCE TREND</div>
+            <div style="position: relative; height: 300px;">
+                <canvas id="warTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Bottom: Recent War History -->
+        <div class="chart-card">
+            <div class="chart-title">RECENT WAR LOG</div>
+            <div style="overflow-x: auto;">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Opponent</th>
+                            <th>Result</th>
+                            <th>Stars</th>
+                            <th>Dest %</th>
+                            <th>Attacks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for war in history %}
+                        <tr>
+                            <td>{{ war.start_time.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ war.opponent_name }}</td>
+                            <td class="result-{{ war.result|lower }}">{{ war.result|upper }}</td>
+                            <td style="color: #facc15; font-weight: bold;">{{ war.total_stars }} ★</td>
+                            <td>{{ war.avg_destruction|round(1) }}%</td>
+                            <td>{{ war.total_attacks }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // 1. Win/Loss Chart
+        const ctxWinLoss = document.getElementById('winLossChart').getContext('2d');
+        new Chart(ctxWinLoss, {
+            type: 'doughnut',
+            data: {
+                labels: ['Wins', 'Losses', 'Draws'],
+                datasets: [{
+                    data: [{{ win_loss.wins or 0 }}, {{ win_loss.losses or 0 }}, {{ win_loss.draws or 0 }}],
+            backgroundColor: ['#4ade80', '#f87171', '#facc15'],
+            borderWidth: 1
+                }]
+            },
+            options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#ddd', font: { family: 'Lilita One' } }
+                }
+            }
+        }
+        });
+
+        // 2. Global Activity Clock
+        const ctxGlobal = document.getElementById('globalActivityChart').getContext('2d');
+        new Chart(ctxGlobal, {
+            type: 'radar',
+            data: {
+                labels: Array.from({ length: 24 }, (_, i) => i + 'h'),
+                datasets: [{
+                    label: 'Clan Activity',
+                    data: {{ activity_data | tojson }},
+            backgroundColor: 'rgba(96, 165, 250, 0.2)',
+            borderColor: '#60a5fa',
+            pointBackgroundColor: '#60a5fa',
+            borderWidth: 2
+                }]
+            },
+            options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    pointLabels: { color: '#aaa', font: { size: 10 } },
+                    ticks: { display: false }
+                }
+            },
+            plugins: { legend: { display: false } }
+        }
+        });
+
+        // 3. War Performance Trend
+        const ctxTrend = document.getElementById('warTrendChart').getContext('2d');
+        new Chart(ctxTrend, {
+            type: 'line',
+            data: {
+                labels: {{ trend_dates | tojson }},
+            datasets: [
+            {
+                label: 'Avg Stars per Attack',
+                data: {{ trend_stars | tojson }},
+            borderColor: '#facc15',
+            backgroundColor: '#facc15',
+            yAxisID: 'y',
+            tension: 0.3
+                    },
+            {
+                label: 'Avg Destruction %',
+                data: {{ trend_dest | tojson }},
+            borderColor: '#f87171',
+            backgroundColor: '#f87171',
+            yAxisID: 'y1',
+            tension: 0.3
+                    }
+        ]
+            },
+            options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                x: { ticks: { color: '#aaa' }, grid: { color: '#333' } },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: { display: true, text: 'Stars', color: '#facc15' },
+                    grid: { color: '#333' },
+                    min: 0,
+                    max: 3
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { display: true, text: 'Destruction %', color: '#f87171' },
+                    min: 0,
+                    max: 100,
+                    grid: { drawOnChartArea: false },
+                    ticks: { color: '#f87171' }
+                }
+            },
+            plugins: {
+                legend: { labels: { color: '#ddd' } }
+            }
+        }
+        });
+    </script>
+</body>
+
+</html>

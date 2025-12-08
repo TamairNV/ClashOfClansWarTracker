@@ -63,14 +63,20 @@ class SQLManager:
 
     def update_war(self, war_data):
         existing = self.get_war(war_data['opponent_tag'], war_data['start_time'])
+        result = war_data.get('result', None)  # Handle optional result
+
         if existing:
-            sql = "UPDATE wars SET state=%s, end_time=%s, opponent_name=%s WHERE war_id=%s"
-            self.execute(sql, (war_data['state'], war_data['end_time'], war_data['opponent_name'], existing['war_id']))
+            if result:
+                sql = "UPDATE wars SET state=%s, end_time=%s, opponent_name=%s, result=%s WHERE war_id=%s"
+                self.execute(sql, (war_data['state'], war_data['end_time'], war_data['opponent_name'], result, existing['war_id']))
+            else:
+                sql = "UPDATE wars SET state=%s, end_time=%s, opponent_name=%s WHERE war_id=%s"
+                self.execute(sql, (war_data['state'], war_data['end_time'], war_data['opponent_name'], existing['war_id']))
             return existing['war_id']
         else:
-            sql = "INSERT INTO wars (opponent_name, opponent_tag, war_type, state, start_time, end_time) VALUES (%s, %s, %s, %s, %s, %s)"
+            sql = "INSERT INTO wars (opponent_name, opponent_tag, war_type, state, start_time, end_time, result) VALUES (%s, %s, %s, %s, %s, %s, %s)"
             self.execute(sql, (war_data['opponent_name'], war_data['opponent_tag'], war_data['type'], war_data['state'],
-                               war_data['start_time'], war_data['end_time']))
+                               war_data['start_time'], war_data['end_time'], result))
             new_war = self.get_war(war_data['opponent_tag'], war_data['start_time'])
             return new_war['war_id'] if new_war else None
 
@@ -283,3 +289,52 @@ class SQLManager:
         """, (war_id,))
 
         return our_team, enemy_team
+
+    # --- CLAN STATS AGGREGATION ---
+
+    def get_clan_war_history_stats(self, limit=20):
+        """Fetches aggregate stats for recent ended wars."""
+        # Calculate totals per war
+        sql = """
+            SELECT 
+                w.war_id, w.start_time, w.state, w.opponent_name, w.result,
+                COUNT(wp.player_tag) as roster_size,
+                SUM(wp.stars) as total_stars,
+                SUM(wp.stars) / NULLIF(SUM(wp.attacks_used), 0) as avg_stars,
+                AVG(wp.destruction_percentage) as avg_destruction,
+                SUM(wp.attacks_used) as total_attacks
+            FROM wars w
+            LEFT JOIN war_performance wp ON w.war_id = wp.war_id
+            WHERE w.state = 'warEnded'
+            GROUP BY w.war_id
+            ORDER BY w.start_time DESC
+            LIMIT %s
+        """
+        return self.fetch_all(sql, (limit,))
+
+    def get_clan_activity_distribution(self):
+        """Aggregates all player activity by hour of day (UTC)."""
+        sql = """
+            SELECT HOUR(timestamp) as hour_of_day, COUNT(*) as activity_count
+            FROM player_activity_log
+            WHERE timestamp > NOW() - INTERVAL 30 DAY
+            GROUP BY hour_of_day
+            ORDER BY hour_of_day ASC
+        """
+        results = self.fetch_all(sql)
+        # Convert to list of 24 integers
+        distribution = [0] * 24
+        for r in results:
+            distribution[r['hour_of_day']] = r['activity_count']
+        return distribution
+
+    def get_clan_win_loss_ratio(self, limit=50):
+        """Calculates W/L/D counts for recent wars."""
+        sql = """
+            SELECT 
+                SUM(CASE WHEN result = 'win' THEN 1 ELSE 0 END) as wins,
+                SUM(CASE WHEN result = 'lose' THEN 1 ELSE 0 END) as losses,
+                SUM(CASE WHEN result = 'draw' THEN 1 ELSE 0 END) as draws
+            FROM (SELECT result FROM wars WHERE state = 'warEnded' ORDER BY start_time DESC LIMIT %s) as recent_wars
+        """
+        return self.fetch_one(sql, (limit,))

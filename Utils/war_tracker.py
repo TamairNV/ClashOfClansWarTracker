@@ -37,8 +37,23 @@ async def main():
 
             if not start_time: return
 
+            # Calculate Result Logic
+            result = None
+            if clean_state == 'warEnded':
+                if war.clan.stars > war.opponent.stars:
+                    result = 'win'
+                elif war.clan.stars < war.opponent.stars:
+                    result = 'lose'
+                else:
+                     if war.clan.destruction > war.opponent.destruction:
+                         result = 'win'
+                     elif war.clan.destruction < war.opponent.destruction:
+                         result = 'lose'
+                     else:
+                         result = 'draw'
+
             war_data = {'opponent_name': war.opponent.name, 'opponent_tag': war.opponent.tag, 'type': war_type,
-                        'state': clean_state, 'start_time': start_time, 'end_time': end_time}
+                        'state': clean_state, 'start_time': start_time, 'end_time': end_time, 'result': result}
             war_id = db.update_war(war_data)
 
             if not war_id: return
@@ -57,18 +72,12 @@ async def main():
                 # Update Individual Attacks (Granular)
                 for i, attack in enumerate(member.attacks, 1):
                     # Extract Army Composition
-                    army_json = {}
-                    # coc.py attack object might not have direct 'units' depending on version/endpoint,
-                    # but usually it's available if detailed. If not, we default to empty.
-                    # We'll try to serialize troops if available.
-                    # Note: Standard war API often doesn't give full army details unless explicitly fetched,
-                    # but we'll add the logic just in case or for future use.
-                    
+                    army_json = {} 
                     attack_data = {
                         'stars': attack.stars,
                         'destruction': attack.destruction,
                         'duration': attack.duration, # Seconds
-                        'army_composition': str(army_json), # Placeholder for now as war API is limited
+                        'army_composition': str(army_json),
                         'order': i,
                         'defender_tag': attack.defender_tag,
                         'defender_th': attack.defender.town_hall if attack.defender else 0
@@ -76,6 +85,22 @@ async def main():
                     db.update_war_attack(war_id, member.tag, attack_data)
 
             for member in war.opponent.members:
+                # FIX: We want stats THEY scored (Offense), not stats SURRENDERED (Defense)
+                # But typically war_opponents table tracks the enemy BASES (Targets).
+                # If we want 'stars' column to be 'Stars they got', we should sum their attacks?
+                # However, previous code used 'best_opponent_attack' which is OUR attack on them.
+                # Given 'backfill' assumes 'stars' is THEIR score, we have a schema confusion.
+                # Best approach: Use 'stars' for THEIR OFFENSE to fix the stats bug.
+                # BUT 'town_hall' and 'map_position' refer to the BASE.
+                # Ideally, we'd have 'stars_scored' and 'stars_yielded'.
+                # For now, let's stick to fixing the "Draw" bug which relies on Result.
+                # We will store Best Opponent Attack (Stars We Got) because that's useful for "Did we verify this base?"
+                # AND we rely on the explicitly passed 'result' in war_data for the W/L.
+                
+                # Reverting to "Stars We Got" logic because 'war_opponents' is primarily a Target List.
+                # The 'backfill' script was calculating result from this table erroneously.
+                # Now that we save 'result' directly, we don't need to backfill from this table.
+                
                 stars_surrendered = member.best_opponent_attack.stars if member.best_opponent_attack else 0
                 destruction_surrendered = member.best_opponent_attack.destruction if member.best_opponent_attack else 0
                 enemy_data = {'tag': member.tag, 'map_position': member.map_position, 'town_hall': member.town_hall,

@@ -36,7 +36,8 @@ scripts_config = {
     'Utils/war_tracker.py': 10,  # Minutes
     'Utils/activityChecker.py': 5,  # Minutes
     'Utils/performance_tracker.py' :720,
-    'Utils/capital_tracker.py': 60 # Hourly check for Raid Weekend
+    'Utils/capital_tracker.py': 60, # Hourly check for Raid Weekend
+    'Utils/player_deep_tracker.py': 720 # 12 Hours (Deep stats, Achievements)
 }
 
 last_run_times = {script: 0 for script in scripts_config}

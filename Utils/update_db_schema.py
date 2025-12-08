@@ -102,6 +102,16 @@ def create_table():
     except Exception as e:
         print(f"❌ Failed to create raid_members table: {e}")
 
+    # 9. Add 'achievements' to players
+    try:
+        db.execute("ALTER TABLE players ADD COLUMN achievements JSON")
+        print("✅ Added 'achievements' column to players.")
+    except pymysql.MySQLError as e:
+        if "Duplicate column name" in str(e):
+            print("🔹 'achievements' column already exists.")
+        else:
+            print(f"⚠️ Error adding 'achievements': {e}")
+            
     finally:
         db.close()
 

@@ -76,8 +76,15 @@ async def main():
                     # coc.py returns 'units' as a list of Unit objects (name, level, etc.)
                     # We'll need to check if 'units' attribute exists and iterate
                     if hasattr(attack, 'units'):
-                        for unit in attack.units:
-                            army_json.append({'name': unit.name, 'level': unit.level})
+                        if attack.units:
+                            print(f"DEBUG: Found {len(attack.units)} units for {member.name}")
+                            for unit in attack.units:
+                                army_json.append({'name': unit.name, 'level': unit.level})
+                        else:
+                            print(f"DEBUG: attack.units is empty list for {member.name}")
+                            pass
+                    else:
+                        print(f"DEBUG: No 'units' attr for {member.name}")
                     
                     # 2. Parse Hero Equipment
                     equipment_json = []

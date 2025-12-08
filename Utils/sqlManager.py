@@ -212,6 +212,11 @@ class SQLManager:
         self.execute(sql, (raid_id, member_data['tag'], member_data['name'], member_data['attacks'], 
                            member_data['capital_resources_looted'], member_data.get('medals_bonus', 0)))
 
+    def update_player_achievements(self, player_tag, achievements_data):
+        """Updates the achievements JSON for a player."""
+        sql = "UPDATE players SET achievements = %s, updated_at = NOW() WHERE player_tag = %s"
+        self.execute(sql, (achievements_data, player_tag))
+
     def update_activity_heartbeat(self, player_tag, current_donations, current_received):
         db_player = self.get_player(player_tag)
         if not db_player: return

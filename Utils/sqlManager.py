@@ -108,7 +108,37 @@ class SQLManager:
         sql = "UPDATE wars SET state = 'warEnded' WHERE war_id = %s"
         self.execute(sql, (war_id,))
 
+    def update_war_attack(self, war_id, player_tag, attack_data):
+        sql = """
+            INSERT INTO war_attacks (war_id, attacker_tag, stars, destruction_percentage, duration_seconds, army_composition, hero_equipment, attack_order, defender_tag, defender_town_hall)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE stars=VALUES(stars), destruction_percentage=VALUES(destruction_percentage), 
+            duration_seconds=VALUES(duration_seconds), army_composition=VALUES(army_composition), hero_equipment=VALUES(hero_equipment),
+            defender_tag=VALUES(defender_tag), defender_town_hall=VALUES(defender_town_hall)
+        """
+        self.execute(sql, (
+            war_id, player_tag, attack_data['stars'], attack_data['destruction'], 
+            attack_data['duration'], attack_data['army_composition'], attack_data['hero_equipment'], attack_data['order'],
+            attack_data['defender_tag'], attack_data['defender_th']
+        ))
+
+
+
+    def update_war_defense(self, war_id, defender_tag, attack_data):
+        sql = """
+            INSERT INTO war_defenses (war_id, defender_tag, attacker_tag, attacker_name, stars, destruction_percentage, duration_seconds, attack_order, army_composition, hero_equipment)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE stars=VALUES(stars), destruction_percentage=VALUES(destruction_percentage), 
+            duration_seconds=VALUES(duration_seconds), army_composition=VALUES(army_composition), hero_equipment=VALUES(hero_equipment)
+        """
+        self.execute(sql, (
+            war_id, defender_tag, attack_data['attacker_tag'], attack_data['attacker_name'],
+            attack_data['stars'], attack_data['destruction'], attack_data['duration'], 
+            attack_data['order'], attack_data['army_composition'], attack_data['hero_equipment']
+        ))
+    
     # --- ANALYTICS ---
+
 
     def get_all_active_players(self):
         return self.fetch_all("SELECT * FROM players WHERE is_in_clan = TRUE")
@@ -150,14 +180,37 @@ class SQLManager:
 
     def update_player_roster(self, player_data):
         sql = """
-        INSERT INTO players (player_tag, name, town_hall_level, role, is_in_clan, updated_at)
-        VALUES (%s, %s, %s, %s, TRUE, NOW())
-        ON DUPLICATE KEY UPDATE name=VALUES(name), town_hall_level=VALUES(town_hall_level), role=VALUES(role), is_in_clan=TRUE, updated_at=NOW()
+        INSERT INTO players (player_tag, name, town_hall_level, role, builder_base_trophies, is_in_clan, updated_at)
+        VALUES (%s, %s, %s, %s, %s, TRUE, NOW())
+        ON DUPLICATE KEY UPDATE name=VALUES(name), town_hall_level=VALUES(town_hall_level), role=VALUES(role), builder_base_trophies=VALUES(builder_base_trophies), is_in_clan=TRUE, updated_at=NOW()
         """
-        self.execute(sql, (player_data.tag, player_data.name, player_data.town_hall, str(player_data.role)))
+        builder_trophies = getattr(player_data, 'builder_base_trophies', 0)
+        self.execute(sql, (player_data.tag, player_data.name, player_data.town_hall, str(player_data.role), builder_trophies))
 
     def mark_player_left(self, player_tag):
         self.execute("UPDATE players SET is_in_clan = FALSE WHERE player_tag = %s", (player_tag,))
+
+    # --- CLAN CAPITAL METHODS ---
+
+    def update_raid_weekend(self, raid_data):
+        sql = """
+            INSERT INTO raid_weekends (raid_id, state, start_time, end_time, total_loot, total_attacks, districts_destroyed, medals_earned)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE state=VALUES(state), total_loot=VALUES(total_loot), total_attacks=VALUES(total_attacks), 
+            districts_destroyed=VALUES(districts_destroyed), medals_earned=VALUES(medals_earned)
+        """
+        # raid_id is derived from start_time usually, or passed explicitly
+        self.execute(sql, (raid_data['id'], raid_data['state'], raid_data['start_time'], raid_data['end_time'],
+                           raid_data['total_loot'], raid_data['total_attacks'], raid_data['districts_destroyed'], raid_data.get('medals', 0)))
+
+    def update_raid_member(self, raid_id, member_data):
+        sql = """
+            INSERT INTO raid_members (raid_id, player_tag, name, attacks_count, loot_looted, medals_bonus)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE attacks_count=VALUES(attacks_count), loot_looted=VALUES(loot_looted), medals_bonus=VALUES(medals_bonus)
+        """
+        self.execute(sql, (raid_id, member_data['tag'], member_data['name'], member_data['attacks'], 
+                           member_data['capital_resources_looted'], member_data.get('medals_bonus', 0)))
 
     def update_activity_heartbeat(self, player_tag, current_donations, current_received):
         db_player = self.get_player(player_tag)

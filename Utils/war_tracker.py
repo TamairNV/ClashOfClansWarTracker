@@ -71,33 +71,63 @@ async def main():
 
                 # Update Individual Attacks (Granular)
                 for i, attack in enumerate(member.attacks, 1):
-                    # Extract Army Composition
-                    army_json = {} 
+                    # 1. Parse Army Composition
+                    army_json = []
+                    # coc.py returns 'units' as a list of Unit objects (name, level, etc.)
+                    # We'll need to check if 'units' attribute exists and iterate
+                    if hasattr(attack, 'units'):
+                        for unit in attack.units:
+                            army_json.append({'name': unit.name, 'level': unit.level})
+                    
+                    # 2. Parse Hero Equipment
+                    equipment_json = []
+                    if hasattr(attack, 'hero_equipment'):
+                         for equip in attack.hero_equipment:
+                             equipment_json.append({'name': equip.name, 'level': equip.level})
+
+                    import json
                     attack_data = {
                         'stars': attack.stars,
                         'destruction': attack.destruction,
-                        'duration': attack.duration, # Seconds
-                        'army_composition': str(army_json),
+                        'duration': attack.duration, 
+                        'army_composition': json.dumps(army_json),
+                        'hero_equipment': json.dumps(equipment_json),
                         'order': i,
                         'defender_tag': attack.defender_tag,
                         'defender_th': attack.defender.town_hall if attack.defender else 0
                     }
                     db.update_war_attack(war_id, member.tag, attack_data)
 
-            for member in war.opponent.members:
-                # FIX: We want stats THEY scored (Offense), not stats SURRENDERED (Defense)
-                # But typically war_opponents table tracks the enemy BASES (Targets).
-                # If we want 'stars' column to be 'Stars they got', we should sum their attacks?
-                # However, previous code used 'best_opponent_attack' which is OUR attack on them.
-                # Given 'backfill' assumes 'stars' is THEIR score, we have a schema confusion.
-                # Best approach: Use 'stars' for THEIR OFFENSE to fix the stats bug.
-                # BUT 'town_hall' and 'map_position' refer to the BASE.
-                # Ideally, we'd have 'stars_scored' and 'stars_yielded'.
-                # For now, let's stick to fixing the "Draw" bug which relies on Result.
-                # We will store Best Opponent Attack (Stars We Got) because that's useful for "Did we verify this base?"
-                # AND we rely on the explicitly passed 'result' in war_data for the W/L.
-                
-                # Reverting to "Stars We Got" logic because 'war_opponents' is primarily a Target List.
+            # --- TRACK DEFENSES (Attacks against us) ---
+            # To get attacks against us, we look at the OPPONENT'S members and their attacks
+            for enemy in war.opponent.members:
+                for i, attack in enumerate(enemy.attacks, 1):
+                    # The 'defender' is US.
+                    if attack.defender_tag:
+                         # Parse Enemy Army/Equip just like above
+                        enemy_army = []
+                        if hasattr(attack, 'units'):
+                            for unit in attack.units:
+                                enemy_army.append({'name': unit.name, 'level': unit.level})
+                        
+                        enemy_equip = []
+                        if hasattr(attack, 'hero_equipment'):
+                             for equip in attack.hero_equipment:
+                                 enemy_equip.append({'name': equip.name, 'level': equip.level})
+                        
+                        import json
+                        defense_data = {
+                            'attacker_tag': enemy.tag,
+                            'attacker_name': enemy.name,
+                            'stars': attack.stars,
+                            'destruction': attack.destruction,
+                            'duration': attack.duration,
+                            'order': i,
+                            'army_composition': json.dumps(enemy_army),
+                            'hero_equipment': json.dumps(enemy_equip)
+                        }
+                        # Store in war_defenses table
+                        db.update_war_defense(war_id, attack.defender_tag, defense_data)
                 # The 'backfill' script was calculating result from this table erroneously.
                 # Now that we save 'result' directly, we don't need to backfill from this table.
                 

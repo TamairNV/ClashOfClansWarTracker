@@ -138,9 +138,12 @@ async def main():
                 # The 'backfill' script was calculating result from this table erroneously.
                 # Now that we save 'result' directly, we don't need to backfill from this table.
                 
-                stars_surrendered = member.best_opponent_attack.stars if member.best_opponent_attack else 0
-                destruction_surrendered = member.best_opponent_attack.destruction if member.best_opponent_attack else 0
-                enemy_data = {'tag': member.tag, 'map_position': member.map_position, 'town_hall': member.town_hall,
+                # FIX: Use 'enemy' (the current iteration variable) not 'member' (from outer loop)
+                stars_surrendered = enemy.best_opponent_attack.stars if enemy.best_opponent_attack else 0
+                destruction_surrendered = enemy.best_opponent_attack.destruction if enemy.best_opponent_attack else 0
+                
+                # The 'tag', 'town_hall' etc should also come from 'enemy'
+                enemy_data = {'tag': enemy.tag, 'map_position': enemy.map_position, 'town_hall': enemy.town_hall,
                               'stars': stars_surrendered, 'destruction': destruction_surrendered}
                 db.update_war_opponent(war_id, enemy_data)
 

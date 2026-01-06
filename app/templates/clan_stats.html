@@ -185,9 +185,9 @@
                             <td>{{ war.start_time.strftime('%Y-%m-%d') }}</td>
                             <td>{{ war.opponent_name }}</td>
                             <td class="result-{{ war.result|lower }}">{{ war.result|upper }}</td>
-                            <td style="color: #facc15; font-weight: bold;">{{ war.total_stars }} ★</td>
-                            <td>{{ war.avg_destruction|round(1) }}%</td>
-                            <td>{{ war.total_attacks }}</td>
+                            <td style="color: #facc15; font-weight: bold;">{{ (war.total_stars or 0) }} ★</td>
+                            <td>{{ (war.avg_destruction or 0)|round(1) }}%</td>
+                            <td>{{ (war.total_attacks or 0) }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -230,7 +230,8 @@
                 labels: Array.from({ length: 24 }, (_, i) => i + 'h'),
                 datasets: [{
                     label: 'Clan Activity',
-                    data: {{ activity_data | tojson }},
+                    data: {{ activity_data | tojson }
+        },
             backgroundColor: 'rgba(96, 165, 250, 0.2)',
             borderColor: '#60a5fa',
             pointBackgroundColor: '#60a5fa',

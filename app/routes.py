@@ -215,8 +215,8 @@ def clan_stats():
         trend_dates.append(war['start_time'].strftime('%m-%d'))
         # Use Avg Stars (rounded) for smoother trend across CWL/Regular
         val = war['avg_stars'] or 0
-        trend_stars.append(round(val, 2))
-        trend_dest.append(war['avg_destruction'] or 0)
+        trend_stars.append(float(round(val, 2)))
+        trend_dest.append(float(war['avg_destruction'] or 0))
         
     # 2. Activity Clock
     activity_data = db.get_clan_activity_distribution()

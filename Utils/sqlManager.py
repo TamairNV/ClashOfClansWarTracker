@@ -357,10 +357,10 @@ class SQLManager:
             SELECT 
                 w.war_id, w.start_time, w.state, w.opponent_name, w.result,
                 COUNT(wp.player_tag) as roster_size,
-                SUM(wp.stars) as total_stars,
-                SUM(wp.stars) / NULLIF(SUM(wp.attacks_used), 0) as avg_stars,
-                AVG(wp.destruction_percentage) as avg_destruction,
-                SUM(wp.attacks_used) as total_attacks
+                COALESCE(SUM(wp.stars), 0) as total_stars,
+                COALESCE(SUM(wp.stars), 0) / NULLIF(SUM(wp.attacks_used), 0) as avg_stars,
+                COALESCE(AVG(wp.destruction_percentage), 0) as avg_destruction,
+                COALESCE(SUM(wp.attacks_used), 0) as total_attacks
             FROM wars w
             LEFT JOIN war_performance wp ON w.war_id = wp.war_id
             WHERE w.state = 'warEnded'

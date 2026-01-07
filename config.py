@@ -18,7 +18,7 @@ class Config:
     CLAN_TAG = "#8GGPQLPU"  # Replace with your real clan tag
 
     # Database Credentials
-    DB_HOST = "192.168.1.18"
+    DB_HOST = "192.168.1.60"
     DB_USER = "Home_User"
     DB_PASSWORD = "Tamer@2006"
     DB_NAME = "clash_manager"

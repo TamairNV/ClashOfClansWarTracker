@@ -5,6 +5,95 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import coc
 from config import Config
 from sqlManager import SQLManager
+import datetime
+
+
+async def check_past_wars(client, db):
+    """
+    Checks for wars in DB that are 'warEnded' but miss a result, 
+    or 'inWar' but past their end time. Fetches data to update them.
+    """
+    # 1. Identify Target Wars
+    print("🔍 Checking for wars needing result updates...")
+    sql = """
+        SELECT * FROM wars 
+        WHERE (state = 'warEnded' AND result IS NULL)
+        OR (state = 'inWar' AND end_time < NOW())
+        ORDER BY start_time DESC LIMIT 5
+    """
+    targets = db.fetch_all(sql)
+    
+    if not targets:
+        print("   -> No pending wars found.")
+        return
+
+    print(f"   -> Found {len(targets)} wars to verify.")
+    
+    # 2. Fetch League Group (CWL) - Primary Source for these issues
+    try:
+        group = await client.get_league_group(Config.CLAN_TAG)
+    except coc.NotFound:
+        print("   -> No active CWL group found.")
+        group = None
+    except Exception as e:
+        print(f"   -> Error fetching league group: {e}")
+        group = None
+
+    # Helper to process a coc.War object
+    def process_war_result(coc_war, db_war):
+        # Identify Us vs Them
+        if coc_war.clan.tag == Config.CLAN_TAG:
+            our_clan = coc_war.clan
+            enemy_clan = coc_war.opponent
+        else:
+            our_clan = coc_war.opponent
+            enemy_clan = coc_war.clan
+            
+        # Calculate Result
+        if our_clan.stars > enemy_clan.stars:
+            res = 'win'
+        elif our_clan.stars < enemy_clan.stars:
+            res = 'lose'
+        else:
+            if our_clan.destruction > enemy_clan.destruction:
+                res = 'win'
+            elif our_clan.destruction < enemy_clan.destruction:
+                res = 'lose'
+            else:
+                res = 'draw'
+
+        print(f"✅ Updating War vs {enemy_clan.name}: Result={res}")
+        
+        # Update DB
+        # We re-construct war_data to pass to update_war. 
+        # Note: update_war handles the UPDATE based on ID if we matched well, 
+        # but here we might want to be explicit.
+        # Let's use db.execute directly to be safe and surgical.
+        
+        sql_update = "UPDATE wars SET result=%s, state='warEnded' WHERE war_id=%s"
+        db.execute(sql_update, (res, db_war['war_id']))
+        
+    # 3. Match and Update
+    for db_war in targets:
+        # CWL Check
+        if group:
+            found = False
+            async for war in group.get_wars_for_clan(Config.CLAN_TAG):
+                if war.opponent.tag == db_war['opponent_tag']:
+                    # Fuzzy time match (2 hours)
+                    war_end = war.end_time.time.replace(tzinfo=None) # naive UTC
+                    # db_war['end_time'] is likely naive UTC as well from pymysql
+                    
+                    if abs((war_end - db_war['end_time']).total_seconds()) < 7200:
+                         if war.state == 'warEnded':
+                             process_war_result(war, db_war)
+                             found = True
+                             break
+            if found: continue
+            
+        # Fallback: War Log (for Regular Wars or if CWL group is gone)
+        # TODO: Implement if needed. For now, CWL is the priority.
+
 
 async def main():
     db = SQLManager(Config.DB_HOST, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME)
@@ -150,6 +239,9 @@ async def main():
             print(f"✅ Updated stats for {len(war.clan.members)} players and opponents.")
         else:
             print(f"💤 War State: {raw_state} (Not tracking)")
+
+        # --- CHECK PAST WARS (Fix Missing Results) ---
+        await check_past_wars(client, db)
 
     except Exception as e:
         print(f"❌ Error: {e}")

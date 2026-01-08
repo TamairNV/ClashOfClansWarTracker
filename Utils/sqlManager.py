@@ -147,15 +147,26 @@ class SQLManager:
         """Gets everyone, sorting active players first."""
         return self.fetch_all("SELECT * FROM players ORDER BY is_in_clan DESC, trust_score DESC")
 
-    def get_player_history(self, player_tag, limit=5):
-        # ONLY fetches ENDED wars to avoid active war penalties
-        sql = """
-            SELECT wp.*, w.start_time, w.war_type
-            FROM war_performance wp
-            JOIN wars w ON wp.war_id = w.war_id
-            WHERE wp.player_tag = %s AND w.state = 'warEnded'
-            ORDER BY w.start_time DESC LIMIT %s
-        """
+    def get_player_history(self, player_tag, limit=5, include_active=False):
+        # Fetches ended wars, optionally includes active/pipeline wars
+        if include_active:
+            # Include inWar and preparation for visibility
+            sql = """
+                SELECT wp.*, w.start_time, w.war_type, w.state
+                FROM war_performance wp
+                JOIN wars w ON wp.war_id = w.war_id
+                WHERE wp.player_tag = %s AND w.state IN ('warEnded', 'inWar', 'preparation')
+                ORDER BY w.start_time DESC LIMIT %s
+            """
+        else:
+            # STRICTLY ended wars for stats calculations
+            sql = """
+                SELECT wp.*, w.start_time, w.war_type
+                FROM war_performance wp
+                JOIN wars w ON wp.war_id = w.war_id
+                WHERE wp.player_tag = %s AND w.state = 'warEnded'
+                ORDER BY w.start_time DESC LIMIT %s
+            """
         return self.fetch_all(sql, (player_tag, limit))
 
     def update_trust_score(self, player_tag, score):

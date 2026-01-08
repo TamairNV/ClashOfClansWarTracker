@@ -138,7 +138,7 @@ def player_profile(tag):
     # Fetch Data
     war_stats = db.get_player_war_stats(tag)
     activity_log = db.get_player_activity_history(tag, limit=200)
-    history = db.get_player_history(tag, limit=20)
+    history = db.get_player_history(tag, limit=20, include_active=True)
     
     db.close()
     

@@ -18,6 +18,19 @@ def get_ip():
         s.close()
     return IP
 
+def wait_for_internet():
+    """Blocks execution until internet is available."""
+    print("🌐 Checking for internet connection...")
+    while True:
+        try:
+            # Try to connect to Google DNS
+            socket.create_connection(("8.8.8.8", 53), timeout=5)
+            print("✅ Internet Connection Established.")
+            break
+        except OSError:
+            print("⚠️ No Internet. Retrying in 5s...")
+            time.sleep(5)
+
 
 def run_flask():
     """This function starts the web server."""
@@ -53,17 +66,21 @@ def run_script(script_path):
 
 
 # --- 3. Execution ---
-def run_discord_bot():
-    """Runs the Discord Bot."""
+    """Runs the Discord Bot with auto-restart."""
     print("🤖 Discord Bot Starting...")
-    # We run the bot script as a subprocess to keep environments clean if needed,
-    # or we could import main. But subprocess is safer for separate loops.
-    try:
-        subprocess.run([sys.executable, "discord_bot/main.py"], check=True)
-    except Exception as e:
-        print(f"❌ Discord Bot Crashed: {e}")
+    while True:
+        try:
+            # We run the bot script as a subprocess to keep environments clean
+            subprocess.run([sys.executable, "discord_bot/main.py"], check=True)
+        except Exception as e:
+            print(f"❌ Discord Bot Crashed: {e}")
+            print("🔄 Restarting Bot in 10 seconds...")
+            time.sleep(10)
 
 if __name__ == "__main__":
+    
+    # Block until internet is up
+    wait_for_internet()
 
     # Start Flask in a separate thread
     flask_thread = threading.Thread(target=run_flask, daemon=True)

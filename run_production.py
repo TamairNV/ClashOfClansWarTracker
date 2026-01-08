@@ -66,6 +66,7 @@ def run_script(script_path):
 
 
 # --- 3. Execution ---
+def run_discord_bot():
     """Runs the Discord Bot with auto-restart."""
     print("🤖 Discord Bot Starting...")
     while True:

@@ -2,7 +2,7 @@
 
 A Flask-based war management system for Clash of Clans that uses probability algorithms to assign optimal targets and track player performance.
 
-## **🧠 The Strategy Engine**
+## **The Strategy Engine**
 
 This app doesn't just list players; it solves the **Clan War Assignment Problem**.
 
@@ -34,7 +34,7 @@ The Green/Yellow/Red bar in the War Room represents the algorithm's confidence i
 * **Yellow (50-80%):** "Equal Match".  
 * **Red (\<50%):** "Reach" or "Scout".
 
-## **🛠️ Setup & Installation**
+## **🛠Setup & Installation**
 
 ### **1\. Prerequisites**
 
@@ -63,7 +63,7 @@ class Config:
 
 Run the SQL commands found in schema.sql (or just run the app, db\_manager handles most table creation dynamically).
 
-## **🤖 The Automation Scripts (Cron Jobs)**
+## **The Automation Scripts (Cron Jobs)**
 
 The app relies on background workers to fetch data. You must schedule these.
 
@@ -78,7 +78,7 @@ The app relies on background workers to fetch data. You must schedule these.
 \# Run war tracker every 15 mins  
 \*/15 \* \* \* \* cd /path/to/app && /usr/bin/python3 war\_tracker.py \>\> logs/war.log 2\>&1
 
-## **📂 Project Structure**
+## **Project Structure**
 
 * **app.py**: Main Flask application.  
 * **routes.py**: Web logic (Roster & War Room views).  

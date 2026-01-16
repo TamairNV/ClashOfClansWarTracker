@@ -288,7 +288,7 @@ class SQLManager:
                                attack_data.get('duration', 0), attack_data.get('army_composition', '{}'),
                                attack_data['order'], attack_data['defender_tag'], attack_data['defender_th']))
 
-    def get_player_attacks(self, player_tag, limit=50):
+    def get_player_attacks(self, player_tag, limit=10000):
         """Fetches individual attack history for a player."""
         sql = """
             SELECT wa.*, w.start_time, w.opponent_name

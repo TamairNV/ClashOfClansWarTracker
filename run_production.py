@@ -6,7 +6,6 @@ from waitress import serve
 from app import app  # Make sure this script is in the same folder as app.py
 
 import sys
-# --- 1. Your Flask Server Setup ---
 def get_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
@@ -44,7 +43,7 @@ def run_flask():
     serve(app, host='0.0.0.0', port=5001, threads=6, url_scheme='https')
 
 
-# --- 2. Your Scheduler Setup ---
+
 scripts_config = {
     'Utils/war_tracker.py': 10,  # Minutes
     'Utils/activityChecker.py': 5,  # Minutes

@@ -22,7 +22,6 @@ async def track_deep_stats():
         for member in clan.members:
             try:
                 # Fetch full player details
-                # print(f"   Fetching {member.name} ({member.tag})...")
                 player = await client.get_player(member.tag)
                 
                 # Parse Achievements
@@ -44,26 +43,22 @@ async def track_deep_stats():
                      for label in player.labels:
                          labels.append({'name': label.name, 'id': label.id})
                 
-                # We could store labels too if we had a column, but achievements is the main goal.
-                
+
                 # Update DB
                 achievements_json = json.dumps(achievements)
                 db.update_player_achievements(player.tag, achievements_json)
                 
                 # Also ensure builder trophies are synced here as a backup
                 if hasattr(player, 'builder_base_trophies'):
-                     # We can reuse update_player_roster IF we construct a mock object or just run a direct update query
-                     # But sqlManager update_player_roster takes a standardized object.
-                     # Let's trust activityChecker for trophies and stick to achievements here.
                      pass
                      
             except Exception as e:
-                print(f"⚠️ Error fetching {member.name}: {e}")
+                print(f"⚠Error fetching {member.name}: {e}")
                 
-        print("✅ Deep Stats Sync Complete.")
+        print("Deep Stats Sync Complete.")
         
     except Exception as e:
-        print(f"❌ Global Error in Deep Tracker: {e}")
+        print(f"Global Error in Deep Tracker: {e}")
     finally:
         await client.close()
         db.close()

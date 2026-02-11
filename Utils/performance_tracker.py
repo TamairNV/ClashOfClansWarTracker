@@ -10,15 +10,13 @@ from timezone_guesser import TimezoneGuesser
 from datetime import datetime, timedelta
 
 def calculate_trust_score(player_th, history, last_active_time=None):
-    # ==========================================
-    # ⚙️ TWEAK VARIABLES HERE
-    # ==========================================
+
     MAX_TH = 18  # Current Max Town Hall level
 
     # Weights (Must add up to 1.0)
-    W_RELIABILITY = 0.50  # 50% - Showing up to attack
-    W_SKILL = 0.15  # 30% - Getting stars
-    W_POWER = 0.35  # 20% - Base strength (TH level)
+    W_RELIABILITY = 0.25  # 25% - Showing up to attack
+    W_SKILL = 0.30  # 30% - Getting stars
+    W_POWER = 0.35  # 35% - Base strength (TH level)
 
     # Penalties & Boosts
     PENALTY_PER_MISS = 15  # Points lost per missed attack (for high THs)
@@ -48,23 +46,18 @@ def calculate_trust_score(player_th, history, last_active_time=None):
             if isinstance(last_active_time, datetime):
                 days_inactive = (datetime.now() - last_active_time).days
                 if days_inactive < RECENTLY_ACTIVE_DAYS:
-                    # Active but no history -> Give them a chance (Roster/Risky)
+
                     # Base score around 60
                     return 60.0
         
-        # Otherwise standard new player logic
+
         base_weight = W_RELIABILITY + W_SKILL
         return round((50 * base_weight) + (power_score * W_POWER), 1)
 
-    # 2. Aggregate Data
-    # RELIABILITY: Only check last 4 wars (User Request)
+
+    # Only check last 4 wars (User Request)
     recent_history = history[:4]
-    
-    total_possible_attacks = 0
-    max_possible_stars = 0 # For skill, we use full history? Or recent? User said "reliability skewed".
-    # Let's use full history for Skill (better sample size) and Recent for Reliability.
-    
-    # Calculate Reliability on Recent History
+
     recent_possible_attacks = 0
     recent_attacks_made = 0
     
@@ -97,7 +90,7 @@ def calculate_trust_score(player_th, history, last_active_time=None):
                   (skill_score * W_SKILL) + \
                   (power_score * W_POWER)
 
-    # --- SPECIAL RULES ---
+
 
     # New Player Boost (Protect good recruits from low sample size)
     total_wars = len(history)
@@ -126,10 +119,7 @@ def calculate_trust_score(player_th, history, last_active_time=None):
                 # Inactive > 7 days -> Bench them (Max score 40)
                 final_score = min(final_score, 40.0)
             elif days_inactive < RECENTLY_ACTIVE_DAYS and reliability_score < 50:
-                # Recently active but bad history? 
-                # User said: "newly active players should be given a chance"
-                # If they were inactive before (causing bad history) but are active NOW...
-                # We boost them slightly to get them out of "Bench" if they are trying.
+
                 final_score = max(final_score, 50.0)
 
     return round(max(0, min(100, final_score)), 1)
@@ -142,18 +132,16 @@ def main():
     guesser = TimezoneGuesser()
 
     for player in players:
-        # 1. Trust Score
+
         history = db.get_player_history(player['player_tag'], limit=10)
         score = calculate_trust_score(player['town_hall_level'], history, player.get('last_active_time'))
         db.update_trust_score(player['player_tag'], score)
         
-        # 2. Timezone Guessing & Activity Score
-        # Fetch activity log
+
+
         activity_log = db.get_player_activity_history(player['player_tag'], limit=100) # Increased limit for better accuracy
         timestamps = [row['timestamp'] for row in activity_log]
-        
-        # Activity Score: Simple frequency metric (events per day over last 7 days?)
-        # Let's just use raw count of events in last 7 days
+
         recent_events = [t for t in timestamps if (datetime.now() - t).days < 7]
         activity_score = len(recent_events)
         
@@ -162,7 +150,7 @@ def main():
             db.update_player_timezone(player['player_tag'], tz, country, conf, time_label, activity_score)
             print(f"Updated {player['name']}: {score}, {country}, {time_label}, Act:{activity_score}")
         else:
-             # Even if no timezone, save activity score
+
             db.update_player_timezone(player['player_tag'], None, None, 0, None, activity_score)
             print(f"Updated {player['name']}: {score} (No Loc), Act:{activity_score}")
 

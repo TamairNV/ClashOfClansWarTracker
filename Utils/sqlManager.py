@@ -22,7 +22,7 @@ class SQLManager:
             try:
                 self.connection = pymysql.connect(**self.config)
             except pymysql.MySQLError as e:
-                print(f"❌ Database Connection Error: {e}")
+                print(f"Database Connection Error: {e}")
                 raise
 
     def close(self):
@@ -36,7 +36,7 @@ class SQLManager:
                 cursor.execute(sql, params)
                 return cursor.rowcount
             except pymysql.MySQLError as e:
-                print(f"❌ Query Error: {e} \nSQL: {sql}")
+                print(f"Query Error: {e} \nSQL: {sql}")
                 return 0
 
     def fetch_one(self, sql, params=None):

@@ -9,10 +9,7 @@ import datetime
 
 
 async def check_past_wars(client, db):
-    """
-    Checks for wars in DB that are 'warEnded' but miss a result, 
-    or 'inWar' but past their end time. Fetches data to update them.
-    """
+
     # 1. Identify Target Wars
     print("🔍 Checking for wars needing result updates...")
     sql = """
@@ -28,8 +25,7 @@ async def check_past_wars(client, db):
         return
 
     print(f"   -> Found {len(targets)} wars to verify.")
-    
-    # 2. Fetch League Group (CWL) - Primary Source for these issues
+
     try:
         group = await client.get_league_group(Config.CLAN_TAG)
     except coc.NotFound:
@@ -39,9 +35,9 @@ async def check_past_wars(client, db):
         print(f"   -> Error fetching league group: {e}")
         group = None
 
-    # Helper to process a coc.War object
+
     def process_war_result(coc_war, db_war):
-        # Identify Us vs Them
+
         if coc_war.clan.tag == Config.CLAN_TAG:
             our_clan = coc_war.clan
             enemy_clan = coc_war.opponent
@@ -62,13 +58,9 @@ async def check_past_wars(client, db):
             else:
                 res = 'draw'
 
-        print(f"✅ Updating War vs {enemy_clan.name}: Result={res}")
+        print(f"Updating War vs {enemy_clan.name}: Result={res}")
         
-        # Update DB
-        # We re-construct war_data to pass to update_war. 
-        # Note: update_war handles the UPDATE based on ID if we matched well, 
-        # but here we might want to be explicit.
-        # Let's use db.execute directly to be safe and surgical.
+
         
         sql_update = "UPDATE wars SET result=%s, state='warEnded' WHERE war_id=%s"
         db.execute(sql_update, (res, db_war['war_id']))
@@ -80,9 +72,9 @@ async def check_past_wars(client, db):
             found = False
             async for war in group.get_wars_for_clan(Config.CLAN_TAG):
                 if war.opponent.tag == db_war['opponent_tag']:
-                    # Fuzzy time match (2 hours)
-                    war_end = war.end_time.time.replace(tzinfo=None) # naive UTC
-                    # db_war['end_time'] is likely naive UTC as well from pymysql
+
+                    war_end = war.end_time.time.replace(tzinfo=None)
+
                     
                     if abs((war_end - db_war['end_time']).total_seconds()) < 7200:
                          if war.state == 'warEnded':
@@ -90,9 +82,7 @@ async def check_past_wars(client, db):
                              found = True
                              break
             if found: continue
-            
-        # Fallback: War Log (for Regular Wars or if CWL group is gone)
-        # TODO: Implement if needed. For now, CWL is the priority.
+
 
 
 async def main():
@@ -101,16 +91,15 @@ async def main():
 
     try:
         await client.login(Config.COC_EMAIL, Config.COC_PASSWORD)
-        
-        # --- CLEANUP STALE WARS ---
+
         print("🧹 Checking for stale wars...")
         stale_wars = db.get_stale_wars()
         for stale in stale_wars:
-            print(f"⚠️ Found stale war vs {stale['opponent_name']} (ID: {stale['war_id']}). Force closing...")
+            print(f"Found stale war vs {stale['opponent_name']} (ID: {stale['war_id']}). Force closing...")
             db.force_close_war(stale['war_id'])
-            print(f"✅ War {stale['war_id']} marked as ended.")
+            print(f"War {stale['war_id']} marked as ended.")
             
-        print(f"⚔️ Checking Current War for {Config.CLAN_TAG}...")
+        print(f"Checking Current War for {Config.CLAN_TAG}...")
         war = await client.get_current_war(Config.CLAN_TAG)
 
         raw_state = str(war.state)
@@ -160,10 +149,8 @@ async def main():
 
                 # Update Individual Attacks (Granular)
                 for i, attack in enumerate(member.attacks, 1):
-                    # 1. Parse Army Composition
+
                     army_json = []
-                    # coc.py returns 'units' as a list of Unit objects (name, level, etc.)
-                    # We'll need to check if 'units' attribute exists and iterate
                     if hasattr(attack, 'units'):
                         if attack.units:
                             print(f"DEBUG: Found {len(attack.units)} units for {member.name}")
@@ -194,13 +181,12 @@ async def main():
                     }
                     db.update_war_attack(war_id, member.tag, attack_data)
 
-            # --- TRACK DEFENSES (Attacks against us) ---
-            # To get attacks against us, we look at the OPPONENT'S members and their attacks
+
             for enemy in war.opponent.members:
                 for i, attack in enumerate(enemy.attacks, 1):
-                    # The 'defender' is US.
+
                     if attack.defender_tag:
-                         # Parse Enemy Army/Equip just like above
+
                         enemy_army = []
                         if hasattr(attack, 'units'):
                             for unit in attack.units:
@@ -222,25 +208,22 @@ async def main():
                             'army_composition': json.dumps(enemy_army),
                             'hero_equipment': json.dumps(enemy_equip)
                         }
-                        # Store in war_defenses table
+
                         db.update_war_defense(war_id, attack.defender_tag, defense_data)
-                # The 'backfill' script was calculating result from this table erroneously.
-                # Now that we save 'result' directly, we don't need to backfill from this table.
-                
-                # FIX: Use 'enemy' (the current iteration variable) not 'member' (from outer loop)
+
                 stars_surrendered = enemy.best_opponent_attack.stars if enemy.best_opponent_attack else 0
                 destruction_surrendered = enemy.best_opponent_attack.destruction if enemy.best_opponent_attack else 0
                 
-                # The 'tag', 'town_hall' etc should also come from 'enemy'
+
                 enemy_data = {'tag': enemy.tag, 'map_position': enemy.map_position, 'town_hall': enemy.town_hall,
                               'stars': stars_surrendered, 'destruction': destruction_surrendered}
                 db.update_war_opponent(war_id, enemy_data)
 
-            print(f"✅ Updated stats for {len(war.clan.members)} players and opponents.")
+            print(f"Updated stats for {len(war.clan.members)} players and opponents.")
         else:
-            print(f"💤 War State: {raw_state} (Not tracking)")
+            print(f"War State: {raw_state} (Not tracking)")
 
-        # --- CHECK PAST WARS (Fix Missing Results) ---
+
         await check_past_wars(client, db)
 
     except Exception as e:

@@ -108,19 +108,7 @@ class SQLManager:
         sql = "UPDATE wars SET state = 'warEnded' WHERE war_id = %s"
         self.execute(sql, (war_id,))
 
-    def update_war_attack(self, war_id, player_tag, attack_data):
-        sql = """
-            INSERT INTO war_attacks (war_id, attacker_tag, stars, destruction_percentage, duration_seconds, army_composition, hero_equipment, attack_order, defender_tag, defender_town_hall)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE stars=VALUES(stars), destruction_percentage=VALUES(destruction_percentage), 
-            duration_seconds=VALUES(duration_seconds), army_composition=VALUES(army_composition), hero_equipment=VALUES(hero_equipment),
-            defender_tag=VALUES(defender_tag), defender_town_hall=VALUES(defender_town_hall)
-        """
-        self.execute(sql, (
-            war_id, player_tag, attack_data['stars'], attack_data['destruction'], 
-            attack_data['duration'], attack_data['army_composition'], attack_data['hero_equipment'], attack_data['order'],
-            attack_data['defender_tag'], attack_data['defender_th']
-        ))
+
 
 
 
@@ -260,16 +248,10 @@ class SQLManager:
 
     def update_war_attack(self, war_id, player_tag, attack_data):
         """Updates or inserts a single attack record."""
-        # attack_data includes: stars, destruction, duration, army_composition, order, defender_tag, defender_th
+        # attack_data includes: stars, destruction, duration, army_composition, hero_equipment, order, defender_tag, defender_th
         sql = """
-            INSERT INTO war_attacks (war_id, player_tag, stars, destruction, duration, army_composition, attack_order, defender_tag, defender_th)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-            stars = VALUES(stars),
-            destruction = VALUES(destruction),
-            duration = VALUES(duration),
-            army_composition = VALUES(army_composition),
-            defender_th = VALUES(defender_th);
+            INSERT INTO war_attacks (war_id, player_tag, stars, destruction, duration, army_composition, hero_equipment, attack_order, defender_tag, defender_th)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         
         check_sql = "SELECT attack_id FROM war_attacks WHERE war_id=%s AND player_tag=%s AND attack_order=%s"
@@ -277,15 +259,15 @@ class SQLManager:
         
         if existing:
             update_sql = """
-                UPDATE war_attacks SET stars=%s, destruction=%s, duration=%s, army_composition=%s, defender_tag=%s, defender_th=%s
+                UPDATE war_attacks SET stars=%s, destruction=%s, duration=%s, army_composition=%s, hero_equipment=%s, defender_tag=%s, defender_th=%s
                 WHERE attack_id=%s
             """
             self.execute(update_sql, (attack_data['stars'], attack_data['destruction'], attack_data.get('duration', 0), 
-                                      attack_data.get('army_composition', '{}'), attack_data['defender_tag'], 
+                                      attack_data.get('army_composition', '[]'), attack_data.get('hero_equipment', '[]'), attack_data['defender_tag'], 
                                       attack_data['defender_th'], existing['attack_id']))
         else:
             self.execute(sql, (war_id, player_tag, attack_data['stars'], attack_data['destruction'], 
-                               attack_data.get('duration', 0), attack_data.get('army_composition', '{}'),
+                               attack_data.get('duration', 0), attack_data.get('army_composition', '[]'), attack_data.get('hero_equipment', '[]'),
                                attack_data['order'], attack_data['defender_tag'], attack_data['defender_th']))
 
     def get_player_attacks(self, player_tag, limit=10000):

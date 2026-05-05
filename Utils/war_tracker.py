@@ -68,8 +68,8 @@ async def check_past_wars(client, db):
     # 3. Match and Update
     for db_war in targets:
         # CWL Check
+        found = False
         if group:
-            found = False
             async for war in group.get_wars_for_clan(Config.CLAN_TAG):
                 if war.opponent.tag == db_war['opponent_tag']:
 
@@ -82,8 +82,20 @@ async def check_past_wars(client, db):
                              found = True
                              break
             if found: continue
-
-
+            
+        # Regular War Check from Log
+        if not found:
+            try:
+                war_log = await client.get_war_log(Config.CLAN_TAG, limit=5)
+                for log_entry in war_log:
+                    if log_entry.opponent.tag == db_war['opponent_tag']:
+                        war_end = log_entry.end_time.time.replace(tzinfo=None)
+                        if abs((war_end - db_war['end_time']).total_seconds()) < 86400: # 1 day tolerance
+                            process_war_result(log_entry, db_war)
+                            found = True
+                            break
+            except Exception as e:
+                print(f"   -> Error checking war log: {e}")
 
 async def main():
     db = SQLManager(Config.DB_HOST, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME)
@@ -151,16 +163,9 @@ async def main():
                 for i, attack in enumerate(member.attacks, 1):
 
                     army_json = []
-                    if hasattr(attack, 'units'):
-                        if attack.units:
-                            print(f"DEBUG: Found {len(attack.units)} units for {member.name}")
-                            for unit in attack.units:
-                                army_json.append({'name': unit.name, 'level': unit.level})
-                        else:
-                            print(f"DEBUG: attack.units is empty list for {member.name}")
-                            pass
-                    else:
-                        print(f"DEBUG: No 'units' attr for {member.name}")
+                    if hasattr(attack, 'units') and attack.units:
+                        for unit in attack.units:
+                            army_json.append({'name': unit.name, 'level': unit.level})
                     
                     # 2. Parse Hero Equipment
                     equipment_json = []

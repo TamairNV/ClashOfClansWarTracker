@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clan Benchmarks</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='icons/roster_icon.png') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/insights.css') }}">
+</head>
+
+<body>
+
+    <nav class="nav-bar">
+        <a href="{{ url_for('main.index') }}" class="nav-item">Home</a>
+        <a href="{{ url_for('main.roster') }}" class="nav-item">
+            <img src="{{ url_for('static', filename='icons/roster_icon.png') }}" class="icon"
+                onerror="this.style.display='none'"> Roster
+        </a>
+        <a href="{{ url_for('main.war_room') }}" class="nav-item">
+            <img src="{{ url_for('static', filename='icons/swords_icon.png') }}" class="icon"
+                onerror="this.style.display='none'"> War Room
+        </a>
+        <a href="{{ url_for('main.clan_stats') }}" class="nav-item">Stats</a>
+        <a href="{{ url_for('main.insights') }}" class="nav-item">Insights</a>
+        <a href="{{ url_for('main.benchmarks_page') }}" class="nav-item active">Benchmarks</a>
+    </nav>
+
+    {% set ranked = b.clans | selectattr('vs_expected') | sort(attribute='vs_expected', reverse=True) | list %}
+    {% set ours = b.clans | selectattr('ours') | first %}
+
+    <div class="hero-banner">
+        <div class="hero-content">
+            <h1>CLAN BENCHMARKS</h1>
+            <p>{{ b.clans | length }} tracked clans · {{ b.unique_wars }} wars · {{ "{:,}".format(b.attacks) }}
+                attacks · {{ b['from'].strftime('%d %b %Y') if b['from'] else '' }} to
+                {{ b['to'].strftime('%d %b %Y') if b['to'] else '' }}</p>
+        </div>
+    </div>
+
+    <div class="ins-container">
+
+        {% if ours %}
+        <div class="kpi-row">
+            <div class="kpi">
+                <div class="kpi-label">TH-adjusted rank</div>
+                <div class="kpi-value">{{ ranked.index(ours) + 1 if ours in ranked else '-' }}<span
+                        style="font-size: 1.1rem; color:#888"> / {{ ranked | length }}</span></div>
+                <div class="kpi-sub">stars vs expected</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">Stars vs expected</div>
+                <div class="kpi-value">{{ '%+.2f' | format(ours.vs_expected or 0) }}</div>
+                <div class="kpi-sub">per attack, in this data</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">Last 90 days</div>
+                <div class="kpi-value">{{ '%+.2f' | format(b.ours_recent_vs_expected or 0) }}</div>
+                <div class="kpi-sub">from our own war log</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">Average TH</div>
+                <div class="kpi-value">{{ ours.avg_th }}</div>
+                <div class="kpi-sub">field average {{ ((b.clans | sum(attribute='avg_th')) / (b.clans | length)) |
+                    round(2) }}</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-title">WHO HITS ABOVE THEIR WEIGHT</div>
+            <p class="card-note">Average stars per attack minus what a typical attacker gets in the same town hall
+                matchup. Zero is average. This is fair to clans with lower town halls.</p>
+            <div class="chart-box" style="height: {{ 120 + 22 * (ranked | length) }}px"><canvas
+                    id="vsExpectedChart"></canvas></div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">TOWN HALL VS STARS</div>
+                <p class="card-note">Each dot is a clan. Higher town halls usually mean easier stars against the
+                    same opponents. Yellow is us.</p>
+                <div class="chart-box tall"><canvas id="thScatter"></canvas></div>
+            </div>
+            <div class="card">
+                <div class="card-title">SAME-TH TRIPLE RATE, ALL CLANS</div>
+                <p class="card-note">How hard each town hall level is to triple against an equal opponent.</p>
+                <div class="chart-box tall"><canvas id="sameThChart"></canvas></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">ALL TRACKED CLANS</div>
+            <p class="card-note">Click a column to sort. Win rate only shows when 3+ wars have a final score.</p>
+            <div class="table-scroll">
+                <table class="ins-table sortable">
+                    <thead>
+                        <tr>
+                            <th data-type="num">#</th>
+                            <th data-type="text" class="left">Clan</th>
+                            <th data-type="num">Wars</th>
+                            <th data-type="num">Win rate</th>
+                            <th data-type="num">Avg TH</th>
+                            <th data-type="num">Attacks</th>
+                            <th data-type="num">Avg ★</th>
+                            <th data-type="num">Triple</th>
+                            <th data-type="num">0-1 ★</th>
+                            <th data-type="num">vs expected</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in b.clans %}
+                        <tr class="{{ 'ours' if c.ours else '' }}">
+                            <td>{{ c.rank }}</td>
+                            <td class="left">{{ c.name }}</td>
+                            <td>{{ c.wars }}</td>
+                            <td data-v="{{ c.win_rate if c.win_rate is not none else -1 }}">
+                                {{ (c.win_rate|string + '%') if c.win_rate is not none else '-' }}</td>
+                            <td>{{ c.avg_th }}</td>
+                            <td>{{ c.attacks }}</td>
+                            <td>{{ c.avg_stars }}</td>
+                            <td data-v="{{ c.triple_rate }}">{{ c.triple_rate }}%</td>
+                            <td data-v="{{ c.fail_rate }}">{{ c.fail_rate }}%</td>
+                            <td data-v="{{ c.vs_expected if c.vs_expected is not none else -9 }}"
+                                class="{{ 'good' if (c.vs_expected or 0) > 0 else 'bad' }}">
+                                {{ '%+.2f' | format(c.vs_expected) if c.vs_expected is not none else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="data-note">From the data harvester. It stored each war many times over, so wars and attacks
+                are de-duplicated here. Clans with fewer than 30 attacks are left out.</p>
+        </div>
+
+    </div>
+
+    <script>
+        Chart.defaults.color = '#aaa';
+        Chart.defaults.borderColor = '#333';
+        Chart.defaults.font.family = 'Verdana, sans-serif';
+        const C = { ours: '#facc15', other: '#6b7280', good: '#4ade80', bad: '#f87171' };
+        const clans = {{ ranked | tojson }};
+
+        new Chart(document.getElementById('vsExpectedChart'), {
+            type: 'bar',
+            data: {
+                labels: clans.map(c => c.name),
+                datasets: [{
+                    data: clans.map(c => c.vs_expected),
+                    backgroundColor: clans.map(c => c.ours ? C.ours : (c.vs_expected >= 0 ? '#4ade8099' : '#f8717199')),
+                }]
+            },
+            options: {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                scales: { x: { title: { display: true, text: 'Stars per attack vs expected' } },
+                          y: { ticks: { autoSkip: false, font: { size: 11 } } } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => {
+                        const c = clans[ctx.dataIndex];
+                        return `${ctx.parsed.x > 0 ? '+' : ''}${ctx.parsed.x} · ${c.avg_stars}★ avg · TH ${c.avg_th}`;
+                    } } }
+                }
+            }
+        });
+
+        const all = {{ b.clans | tojson }};
+        new Chart(document.getElementById('thScatter'), {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    data: all.map(c => ({ x: c.avg_th, y: c.avg_stars, c })),
+                    pointRadius: all.map(c => c.ours ? 9 : 6),
+                    backgroundColor: all.map(c => c.ours ? C.ours : '#9ca3afaa'),
+                    borderColor: '#111', borderWidth: 1,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { x: { title: { display: true, text: 'Average town hall in war' } },
+                          y: { title: { display: true, text: 'Avg stars per attack' } } },
+                plugins: { legend: { display: false },
+                           tooltip: { callbacks: { label: ctx => `${ctx.raw.c.name}: TH ${ctx.raw.x}, ${ctx.raw.y}★` } } }
+            }
+        });
+
+        const sameTh = {{ b.same_th | tojson }};
+        new Chart(document.getElementById('sameThChart'), {
+            type: 'bar',
+            data: {
+                labels: sameTh.map(r => 'TH' + r.th),
+                datasets: [
+                    { label: 'Triple', data: sameTh.map(r => r.triple_rate), backgroundColor: C.ours },
+                    { label: '0-1 stars', data: sameTh.map(r => r.fail_rate), backgroundColor: C.bad },
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { min: 0, max: 100, ticks: { callback: v => v + '%' } } },
+                plugins: { tooltip: { callbacks: { footer: i => sameTh[i[0].dataIndex].attacks + ' attacks' } } }
+            }
+        });
+
+        document.querySelectorAll('table.sortable th').forEach((th, col) => {
+            th.addEventListener('click', () => {
+                const table = th.closest('table'), body = table.tBodies[0];
+                const asc = th.dataset.sort !== 'asc';
+                table.querySelectorAll('th').forEach(h => delete h.dataset.sort);
+                th.dataset.sort = asc ? 'asc' : 'desc';
+                const val = tr => {
+                    const td = tr.children[col];
+                    if (th.dataset.type === 'text') return td.textContent.trim().toLowerCase();
+                    return parseFloat(td.dataset.v ?? td.textContent) || 0;
+                };
+                [...body.rows].sort((a, b) => (val(a) > val(b) ? 1 : val(a) < val(b) ? -1 : 0) * (asc ? 1 : -1))
+                    .forEach(r => body.appendChild(r));
+            });
+        });
+    </script>
+</body>
+
+</html>

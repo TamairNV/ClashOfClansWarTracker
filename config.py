@@ -1,23 +1,22 @@
-
 import os
 from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
 
-    SECRET_KEY = 'devkey123'  # Replace with environment variable in production
-    DEBUG = True
-    TESTING = True
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    DEBUG = os.environ.get('FLASK_DEBUG', '0') == '1'
+    TESTING = False
     # Clash of Clans API Credentials
     COC_EMAIL = os.environ.get('COC_EMAIL')
     COC_PASSWORD = os.environ.get('COC_PASSWORD')
 
 
     # Clan Settings
-    CLAN_TAG = "#8GGPQLPU"
+    CLAN_TAG = os.environ.get('CLAN_TAG', '#8GGPQLPU')
 
-    # Database Credentials
-    DB_HOST = "192.168.1.199"
-    DB_USER = "Home_User"
-    DB_PASSWORD = "Tamer@2006"
-    DB_NAME = "clash_manager"
+    # Database Credentials (set in .env)
+    DB_HOST = os.environ.get('DB_HOST', 'localhost')
+    DB_USER = os.environ.get('DB_USER')
+    DB_PASSWORD = os.environ.get('DB_PASSWORD')
+    DB_NAME = os.environ.get('DB_NAME', 'clash_manager')

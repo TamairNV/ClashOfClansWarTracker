@@ -294,7 +294,7 @@
 
             <!-- Activity Clock -->
             <div class="chart-container">
-                <h3 style="color: #fff; font-family: 'Lilita One'; margin-bottom: 5px;">ACTIVITY CLOCK (UTC)</h3>
+                <h3 style="color: #fff; font-family: 'Lilita One'; margin-bottom: 5px;">ACTIVITY CLOCK (UK TIME)</h3>
 
                 <!-- Favorite Time Badge -->
                 {% if player.favorite_time_label %}
@@ -324,7 +324,7 @@
 
             <!-- Donation History -->
             <div class="chart-container">
-                <h3 style="color: #fff; font-family: 'Lilita One'; margin-bottom: 15px;">DONATION HISTORY</h3>
+                <h3 style="color: #fff; font-family: 'Lilita One'; margin-bottom: 15px;">DONATIONS PER DAY</h3>
                 <div style="position: relative; height: 200px;">
                     <canvas id="donationChart"></canvas>
                 </div>
@@ -437,11 +437,11 @@
         // 2. Donation History
         const ctxDonation = document.getElementById('donationChart').getContext('2d');
         new Chart(ctxDonation, {
-            type: 'line',
+            type: 'bar',
             data: {
                 labels: {{ donation_dates | tojson }},
             datasets: [{
-                label: 'Donations',
+                label: 'Donations per day',
                 data: {{ donation_values | tojson }},
             borderColor: '#4ade80', // Green
             backgroundColor: 'rgba(74, 222, 128, 0.1)',
@@ -468,7 +468,7 @@
                 labels: {{ war_dates | tojson }},
             datasets: [
             {
-                label: 'Stars',
+                label: 'Stars per attack',
                 data: {{ war_stars | tojson }},
             borderColor: '#facc15', // Yellow
             yAxisID: 'y',

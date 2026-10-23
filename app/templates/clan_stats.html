@@ -146,7 +146,7 @@
 
             <!-- Global Activity Clock -->
             <div class="chart-card">
-                <div class="chart-title">CLAN ACTIVITY CLOCK (UTC)</div>
+                <div class="chart-title">CLAN ACTIVITY CLOCK (UK TIME)</div>
                 <p style="text-align: center; color: #aaa; font-size: 0.9rem; margin-bottom: 10px;">
                     When is the clan most active globally?
                 </p>
@@ -174,7 +174,7 @@
                             <th>Date</th>
                             <th>Opponent</th>
                             <th>Result</th>
-                            <th>Stars</th>
+                            <th>Stars (us – them)</th>
                             <th>Dest %</th>
                             <th>Attacks</th>
                         </tr>
@@ -184,8 +184,8 @@
                         <tr>
                             <td>{{ war.start_time.strftime('%Y-%m-%d') }}</td>
                             <td>{{ war.opponent_name }}</td>
-                            <td class="result-{{ war.result|lower }}">{{ war.result|upper }}</td>
-                            <td style="color: #facc15; font-weight: bold;">{{ (war.total_stars or 0) }} ★</td>
+                            <td class="result-{{ war.result|lower }}">{{ war.result|upper if war.result else '?' }}</td>
+                            <td style="color: #facc15; font-weight: bold;">{{ (war.total_stars or 0) }} – {{ (war.enemy_stars or 0) }} ★</td>
                             <td>{{ (war.avg_destruction or 0)|round(1) }}%</td>
                             <td>{{ (war.total_attacks or 0) }}</td>
                         </tr>
@@ -225,9 +225,9 @@
         // 2. Global Activity Clock
         const ctxGlobal = document.getElementById('globalActivityChart').getContext('2d');
         new Chart(ctxGlobal, {
-            type: 'radar',
+            type: 'bar',
             data: {
-                labels: Array.from({ length: 24 }, (_, i) => i + 'h'),
+                labels: Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0') + ':00'),
                 datasets: [{
                     label: 'Clan Activity',
                     data: {{ activity_data | tojson }},
@@ -241,12 +241,8 @@
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                r: {
-                    angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                    pointLabels: { color: '#aaa', font: { size: 10 } },
-                    ticks: { display: false }
-                }
+                x: { ticks: { color: '#aaa', maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, grid: { display: false } },
+                y: { ticks: { color: '#aaa' }, grid: { color: '#333' }, title: { display: true, text: 'Donation events (30 days)', color: '#aaa' } }
             },
             plugins: { legend: { display: false } }
         }

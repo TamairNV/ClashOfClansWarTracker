@@ -80,6 +80,7 @@ def war_room():
     db = SQLManager(Config.DB_HOST, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME)
     active_war = db.get_active_war()
     if not active_war:
+        db.close()
         return render_template('war_room.html', active=False)
 
     our_team, enemy_team = db.get_full_war_map(active_war['war_id'])
@@ -133,17 +134,15 @@ def player_profile(tag):
     player = db.get_player(tag)
     
     if not player:
+        db.close()
         return "Player not found", 404
 
     # Fetch Data
     war_stats = db.get_player_war_stats(tag)
     activity_log = db.get_player_activity_history(tag, limit=250)
     history = db.get_player_history(tag, limit=100, include_active=True)
-    
-    db.close()
-    
-    # Fetch granular attacks
     raw_attacks = db.get_player_attacks(tag)
+    db.close()
     
     # Organize attacks by war_id for easy lookup in the template
     attacks_by_war = {}
@@ -157,33 +156,37 @@ def player_profile(tag):
     # 1. Activity Clock (Hours)
     activity_hours = [0] * 24
     
-    # 2. Donation History (Date -> Value)
-    donation_dates = []
-    donation_values = []
-    
-    for log in activity_log:
-        # Clock
-        hour = log['timestamp'].hour
-        activity_hours[hour] += 1
-        
-        # Donation History (Only if it's a donation event)
-        if log['activity_type'] == 'donation' and log.get('value'):
-            donation_dates.append(log['timestamp'].strftime('%m-%d'))
-            donation_values.append(log['value'])
+    # 2. Donations per day. Logged values are the running season total,
+    # so chart the increase between logs (a drop means the season reset).
+    donations_by_day = {}
+    prev = None
 
-    # Reverse to show oldest to newest
-    donation_dates.reverse()
-    donation_values.reverse()
+    for log in reversed(activity_log):  # oldest first
+        activity_hours[log['timestamp'].hour] += 1
+
+        if log['activity_type'] == 'donation' and log.get('value') is not None:
+            value = log['value']
+            if prev is None:
+                gained = 0  # no baseline for the oldest log in the window
+            else:
+                gained = value - prev if value >= prev else value
+            prev = value
+            day = log['timestamp'].strftime('%m-%d')
+            donations_by_day[day] = donations_by_day.get(day, 0) + gained
+
+    donation_dates = list(donations_by_day.keys())
+    donation_values = list(donations_by_day.values())
 
     # 3. War Performance Trend
     war_dates = []
     war_stars = []
     war_destruction = []
     
-    # History is already sorted DESC (newest first), so reverse for chart
-    for war in reversed(history):
+    # History is already sorted DESC (newest first), so reverse for chart (last 30 wars)
+    for war in reversed(history[:30]):
         war_dates.append(war['start_time'].strftime('%m-%d'))
-        war_stars.append(war['stars'])
+        # Stars per attack so CWL (1 attack) and regular (2 attacks) share the 0-3 axis
+        war_stars.append(round(war['stars'] / war['attacks_used'], 2) if war['attacks_used'] else 0)
         war_destruction.append(war['destruction_percentage'])
 
     return render_template('player_profile.html', 
@@ -212,6 +215,8 @@ def clan_stats():
     trend_dest = []
     
     for war in reversed(history):
+        if not war['total_attacks']:
+            continue
         trend_dates.append(war['start_time'].strftime('%m-%d'))
         # Use Avg Stars (rounded) for smoother trend across CWL/Regular
         val = war['avg_stars'] or 0

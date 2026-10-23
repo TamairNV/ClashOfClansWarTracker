@@ -1,5 +1,8 @@
 
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
+UK_TZ = ZoneInfo('Europe/London')
 import statistics
 from collections import Counter
 
@@ -43,7 +46,10 @@ class TimezoneGuesser:
                 except:
                     continue
             if isinstance(ts, datetime):
-                hours.append(ts.hour)
+                # Activity timestamps are stored in the server's UK local time; convert to UTC
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=UK_TZ)
+                hours.append(ts.astimezone(timezone.utc).hour)
         
         if not hours:
             return None, None, 0.0, None

@@ -15,7 +15,7 @@ async def check_past_wars(client, db):
     sql = """
         SELECT * FROM wars 
         WHERE (state = 'warEnded' AND result IS NULL)
-        OR (state = 'inWar' AND end_time < NOW())
+        OR (state = 'inWar' AND end_time < UTC_TIMESTAMP())
         ORDER BY start_time DESC LIMIT 5
     """
     targets = db.fetch_all(sql)
@@ -86,7 +86,7 @@ async def check_past_wars(client, db):
         # Regular War Check from Log
         if not found:
             try:
-                war_log = await client.get_war_log(Config.CLAN_TAG, limit=5)
+                war_log = await client.get_war_log(Config.CLAN_TAG, limit=20)
                 for log_entry in war_log:
                     if log_entry.opponent.tag == db_war['opponent_tag']:
                         war_end = log_entry.end_time.time.replace(tzinfo=None)
@@ -96,6 +96,37 @@ async def check_past_wars(client, db):
                             break
             except Exception as e:
                 print(f"   -> Error checking war log: {e}")
+
+        # Fallback: work the result out from what we stored during the war
+        if not found:
+            result_from_db(db, db_war)
+
+
+def result_from_db(db, db_war):
+    if not db_war['end_time'] or db_war['end_time'] > datetime.datetime.utcnow() - datetime.timedelta(hours=1):
+        return
+    war_id = db_war['war_id']
+    ours = db.fetch_one("SELECT COALESCE(SUM(stars),0) AS stars, COALESCE(AVG(destruction),0) AS dest, COUNT(*) AS n FROM war_opponents WHERE war_id=%s", (war_id,))
+    theirs = db.fetch_one("SELECT COALESCE(SUM(defense_stars),0) AS stars, COUNT(*) AS n FROM war_performance WHERE war_id=%s", (war_id,))
+    if not theirs['n'] or ours['n'] < theirs['n']:
+        return  # enemy line-up incomplete (early wars only stored part of it)
+    their_dest = db.fetch_one("""
+        SELECT COALESCE(SUM(best),0) AS total FROM (
+            SELECT MAX(destruction_percentage) AS best FROM war_defenses WHERE war_id=%s GROUP BY defender_tag
+        ) d""", (war_id,))['total'] / theirs['n']
+
+    # Older defence rows were partly overwritten, so their_dest is only a lower bound.
+    if ours['stars'] != theirs['stars']:
+        res = 'win' if ours['stars'] > theirs['stars'] else 'lose'
+    elif ours['dest'] >= 99.99:
+        res = 'draw'  # equal stars and we hit 100%, so they did too
+    elif ours['dest'] < their_dest:
+        res = 'lose'
+    else:
+        print(f"   -> War {war_id} vs {db_war['opponent_name']}: tied on stars, can't tell result from stored data")
+        return
+    print(f"   -> War {war_id} vs {db_war['opponent_name']}: result from stored data = {res}")
+    db.execute("UPDATE wars SET result=%s WHERE war_id=%s", (res, war_id))
 
 async def main():
     db = SQLManager(Config.DB_HOST, Config.DB_USER, Config.DB_PASSWORD, Config.DB_NAME)
@@ -209,7 +240,7 @@ async def main():
                             'stars': attack.stars,
                             'destruction': attack.destruction,
                             'duration': attack.duration,
-                            'order': i,
+                            'order': attack.order,
                             'army_composition': json.dumps(enemy_army),
                             'hero_equipment': json.dumps(enemy_equip)
                         }

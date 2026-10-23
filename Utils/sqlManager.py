@@ -61,17 +61,27 @@ class SQLManager:
         sql = "SELECT * FROM wars WHERE state IN ('inWar', 'preparation') ORDER BY start_time DESC LIMIT 1"
         return self.fetch_one(sql)
 
+    def find_existing_war(self, opponent_tag, start_time):
+        # The API's start_time can shift during prep, so match the same opponent
+        # within 2 days instead of exact start_time (exact match created ghost wars).
+        sql = """
+            SELECT * FROM wars WHERE opponent_tag = %s
+            AND ABS(TIMESTAMPDIFF(MINUTE, start_time, %s)) < 2880
+            ORDER BY start_time DESC LIMIT 1
+        """
+        return self.fetch_one(sql, (opponent_tag, start_time))
+
     def update_war(self, war_data):
-        existing = self.get_war(war_data['opponent_tag'], war_data['start_time'])
+        existing = self.find_existing_war(war_data['opponent_tag'], war_data['start_time'])
         result = war_data.get('result', None)  # Handle optional result
 
         if existing:
             if result:
-                sql = "UPDATE wars SET state=%s, end_time=%s, opponent_name=%s, result=%s WHERE war_id=%s"
-                self.execute(sql, (war_data['state'], war_data['end_time'], war_data['opponent_name'], result, existing['war_id']))
+                sql = "UPDATE wars SET state=%s, start_time=%s, end_time=%s, opponent_name=%s, result=%s WHERE war_id=%s"
+                self.execute(sql, (war_data['state'], war_data['start_time'], war_data['end_time'], war_data['opponent_name'], result, existing['war_id']))
             else:
-                sql = "UPDATE wars SET state=%s, end_time=%s, opponent_name=%s WHERE war_id=%s"
-                self.execute(sql, (war_data['state'], war_data['end_time'], war_data['opponent_name'], existing['war_id']))
+                sql = "UPDATE wars SET state=%s, start_time=%s, end_time=%s, opponent_name=%s WHERE war_id=%s"
+                self.execute(sql, (war_data['state'], war_data['start_time'], war_data['end_time'], war_data['opponent_name'], existing['war_id']))
             return existing['war_id']
         else:
             sql = "INSERT INTO wars (opponent_name, opponent_tag, war_type, state, start_time, end_time, result) VALUES (%s, %s, %s, %s, %s, %s, %s)"
@@ -100,7 +110,7 @@ class SQLManager:
 
     def get_stale_wars(self):
         """Fetches active wars that should have ended."""
-        sql = "SELECT * FROM wars WHERE state IN ('inWar', 'preparation') AND end_time < NOW()"
+        sql = "SELECT * FROM wars WHERE state IN ('inWar', 'preparation') AND end_time < UTC_TIMESTAMP()"
         return self.fetch_all(sql)
 
     def force_close_war(self, war_id):
@@ -350,10 +360,12 @@ class SQLManager:
             SELECT 
                 w.war_id, w.start_time, w.state, w.opponent_name, w.result,
                 COUNT(wp.player_tag) as roster_size,
-                COALESCE(SUM(wp.stars), 0) as total_stars,
                 COALESCE(SUM(wp.stars), 0) / NULLIF(SUM(wp.attacks_used), 0) as avg_stars,
-                COALESCE(AVG(wp.destruction_percentage), 0) as avg_destruction,
-                COALESCE(SUM(wp.attacks_used), 0) as total_attacks
+                COALESCE(SUM(wp.attacks_used), 0) as total_attacks,
+                -- War score (best stars / destruction on each enemy base), not the sum of every attack
+                (SELECT COALESCE(SUM(o.stars), 0) FROM war_opponents o WHERE o.war_id = w.war_id) as total_stars,
+                (SELECT COALESCE(AVG(o.destruction), 0) FROM war_opponents o WHERE o.war_id = w.war_id) as avg_destruction,
+                (SELECT COALESCE(SUM(p.defense_stars), 0) FROM war_performance p WHERE p.war_id = w.war_id) as enemy_stars
             FROM wars w
             LEFT JOIN war_performance wp ON w.war_id = wp.war_id
             WHERE w.state = 'warEnded'

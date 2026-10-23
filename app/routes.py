@@ -238,3 +238,16 @@ def clan_stats():
                            trend_dest=trend_dest,
                            activity_data=activity_data,
                            win_loss=win_loss)
+
+
+@main.route('/insights')
+def insights():
+    from Utils.insights import clan_insights, benchmarks, headlines
+    data, bench = clan_insights(), benchmarks()
+    return render_template('insights.html', d=data, bench=bench, headlines=headlines(data, bench))
+
+
+@main.route('/benchmarks')
+def benchmarks_page():
+    from Utils.insights import benchmarks
+    return render_template('benchmarks.html', b=benchmarks())

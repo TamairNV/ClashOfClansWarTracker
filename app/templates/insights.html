@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>War Insights</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='icons/roster_icon.png') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/insights.css') }}">
+</head>
+
+<body>
+
+    <nav class="nav-bar">
+        <a href="{{ url_for('main.index') }}" class="nav-item">Home</a>
+        <a href="{{ url_for('main.roster') }}" class="nav-item">
+            <img src="{{ url_for('static', filename='icons/roster_icon.png') }}" class="icon"
+                onerror="this.style.display='none'"> Roster
+        </a>
+        <a href="{{ url_for('main.war_room') }}" class="nav-item">
+            <img src="{{ url_for('static', filename='icons/swords_icon.png') }}" class="icon"
+                onerror="this.style.display='none'"> War Room
+        </a>
+        <a href="{{ url_for('main.clan_stats') }}" class="nav-item">Stats</a>
+        <a href="{{ url_for('main.insights') }}" class="nav-item active">Insights</a>
+        <a href="{{ url_for('main.benchmarks_page') }}" class="nav-item">Benchmarks</a>
+    </nav>
+
+    <div class="hero-banner">
+        <div class="hero-content">
+            <h1>WAR INSIGHTS</h1>
+            <p>{{ d.kpis.wars }} wars and {{ "{:,}".format(d.kpis.attacks) }} attacks since
+                {{ d.first_war.strftime('%b %Y') if d.first_war else '-' }}</p>
+        </div>
+    </div>
+
+    <div class="ins-container">
+
+        <!-- KPI tiles -->
+        <div class="kpi-row">
+            <div class="kpi">
+                <div class="kpi-label">Record</div>
+                <div class="kpi-value">{{ d.kpis.wins }}-{{ d.kpis.draws }}-{{ d.kpis.losses }}</div>
+                <div class="kpi-sub">W-D-L, {{ d.kpis.win_rate }}% wins</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">Avg stars / attack</div>
+                <div class="kpi-value">{{ d.kpis.avg_stars }}</div>
+                <div class="kpi-sub">out of 3</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">Triple rate</div>
+                <div class="kpi-value">{{ d.kpis.triple_rate }}%</div>
+                <div class="kpi-sub">{{ d.kpis.fail_rate }}% end on 0-1 stars</div>
+            </div>
+            <div class="kpi">
+                <div class="kpi-label">Attacks used</div>
+                <div class="kpi-value">{{ d.kpis.usage }}%</div>
+                <div class="kpi-sub">of all available hits</div>
+            </div>
+        </div>
+
+        {% if headlines %}
+        <div class="card">
+            <div class="card-title">KEY TAKEAWAYS</div>
+            <ul class="takeaways">
+                {% for h in headlines %}<li>{{ h }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Monthly trend -->
+        <div class="card">
+            <div class="card-title">MONTH BY MONTH</div>
+            <p class="card-note">Triple rate, win rate and attacks used each month. Months with fewer than 5
+                wars are faded.</p>
+            <div class="chart-box tall"><canvas id="trendChart"></canvas></div>
+        </div>
+
+        <div class="grid-2">
+            <!-- Hit up / down -->
+            <div class="card">
+                <div class="card-title">HITTING UP VS DOWN</div>
+                <p class="card-note">Triple rate by town hall gap. Grey bars are every attack across the tracked
+                    clans, for comparison.</p>
+                <div class="chart-box"><canvas id="thDiffChart"></canvas></div>
+            </div>
+
+            <!-- Regular vs CWL -->
+            <div class="card">
+                <div class="card-title">REGULAR WAR VS CWL</div>
+                <p class="card-note">Same clan, different effort.</p>
+                <div class="chart-box"><canvas id="typeChart"></canvas></div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <!-- Duration -->
+            <div class="card">
+                <div class="card-title">ATTACK TIMER</div>
+                <p class="card-note">How long an attack ran vs how it ended. Long attacks often mean the timer
+                    ran out.</p>
+                <div class="chart-box"><canvas id="durationChart"></canvas></div>
+            </div>
+
+            <!-- Matchup strength -->
+            <div class="card">
+                <div class="card-title">OPPONENT STRENGTH</div>
+                <p class="card-note">Win rate by the average town hall gap between the two line-ups.</p>
+                <div class="chart-box"><canvas id="matchupChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- TH matrix -->
+        <div class="card">
+            <div class="card-title">TRIPLE RATE BY TOWN HALL MATCHUP</div>
+            <p class="card-note">Rows are the attacker's TH, columns the defender's. Blank cells have fewer than
+                {{ d.th_matrix.min_attacks }} attacks.</p>
+            <div class="table-scroll">
+                <table class="matrix">
+                    <thead>
+                        <tr>
+                            <th>Atk \ Def</th>
+                            {% for t in d.th_matrix.ths %}<th>TH{{ t }}</th>{% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in d.th_matrix.rows %}
+                        <tr>
+                            <th>TH{{ row.th }}</th>
+                            {% for c in row.cells %}
+                            {% if c %}
+                            <td class="heat{{ ' hi' if c.triple_rate >= 60 else '' }}" style="--v: {{ c.triple_rate / 100 }}"
+                                title="{{ c.attacks }} attacks, avg {{ c.avg_stars }} stars">
+                                {{ c.triple_rate|round|int }}%<span>{{ c.attacks }}</span></td>
+                            {% else %}
+                            <td class="empty"></td>
+                            {% endif %}
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Player scatter -->
+        <div class="card">
+            <div class="card-title">RELIABILITY VS QUALITY</div>
+            <p class="card-note">Each dot is a current member with 10+ attacks. Right = uses their attacks,
+                up = gets more stars. Top right is who you want in every war.</p>
+            <div class="chart-box tall"><canvas id="playerScatter"></canvas></div>
+        </div>
+
+        <!-- Player table -->
+        <div class="card">
+            <div class="card-title">PLAYER FORM</div>
+            <p class="card-note">Click a column to sort. Form compares the last 12 wars to the player's overall
+                triple rate. Consistency is 100 when every hit lands the same result.</p>
+            <div class="table-scroll">
+                <table class="ins-table sortable" id="playerTable">
+                    <thead>
+                        <tr>
+                            <th data-type="text">Player</th>
+                            <th data-type="num">TH</th>
+                            <th data-type="num">Wars</th>
+                            <th data-type="num">Used</th>
+                            <th data-type="num">Avg ★</th>
+                            <th data-type="num">Triple</th>
+                            <th data-type="num">Last 12</th>
+                            <th data-type="num">Form</th>
+                            <th data-type="num">Consistency</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in d.players %}
+                        <tr>
+                            <td class="left"><a href="{{ p.link }}">{{ p.name }}</a></td>
+                            <td>{{ p.th }}</td>
+                            <td>{{ p.wars }}</td>
+                            <td data-v="{{ p.usage or 0 }}"
+                                class="{{ 'bad' if (p.usage or 0) < 75 else '' }}">{{ p.usage }}%</td>
+                            <td>{{ p.avg_stars }}</td>
+                            <td data-v="{{ p.triple_rate }}">{{ p.triple_rate }}%</td>
+                            <td data-v="{{ p.recent_triple if p.recent_triple is not none else -1 }}">
+                                {{ (p.recent_triple|string + '%') if p.recent_triple is not none else '-' }}</td>
+                            <td data-v="{{ p.form if p.form is not none else -999 }}"
+                                class="{{ 'good' if (p.form or 0) >= 5 else ('bad' if (p.form or 0) <= -5 else '') }}">
+                                {% if p.form is none %}-{% elif p.form > 0 %}▲ {{ p.form }}{% elif p.form < 0 %}▼ {{ -p.form }}{% else %}0{% endif %}
+                            </td>
+                            <td>{{ p.consistency|int if p.consistency is not none else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <!-- Defenders -->
+            <div class="card">
+                <div class="card-title">TOUGHEST BASES</div>
+                <p class="card-note">Fewest stars given up to the best enemy hit each war (8+ wars).</p>
+                <table class="ins-table">
+                    <thead>
+                        <tr>
+                            <th class="left">Player</th>
+                            <th>TH</th>
+                            <th>Wars</th>
+                            <th>Avg ★ given</th>
+                            <th>Held</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in d.defenders %}
+                        <tr>
+                            <td class="left"><a href="{{ p.link }}">{{ p.name }}</a></td>
+                            <td>{{ p.th }}</td>
+                            <td>{{ p.defenses }}</td>
+                            <td>{{ p.avg_conceded }}</td>
+                            <td>{{ p.held }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- First vs second -->
+            <div class="card">
+                <div class="card-title">FIRST HIT VS SECOND HIT</div>
+                <p class="card-note">Regular wars give two attacks. Second hits are usually clean-ups or
+                    harder targets.</p>
+                <div class="split">
+                    {% for o in [1, 2] %}
+                    {% set s = d.order_split[o] %}
+                    <div class="split-col">
+                        <div class="kpi-label">{{ 'First' if o == 1 else 'Second' }} attack</div>
+                        <div class="kpi-value">{{ s.triple_rate }}%</div>
+                        <div class="kpi-sub">triples · {{ s.avg_stars }} avg ★ · {{ "{:,}".format(s.attacks) }}
+                            hits</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        Chart.defaults.color = '#aaa';
+        Chart.defaults.borderColor = '#333';
+        Chart.defaults.font.family = 'Verdana, sans-serif';
+        const C = { ours: '#facc15', bench: '#6b7280', win: '#4ade80', bad: '#f87171', blue: '#60a5fa' };
+        const pct = { min: 0, max: 100, ticks: { callback: v => v + '%' } };
+
+        // Monthly trend
+        const trend = {{ d.trend | tojson }};
+        const faded = trend.map(m => m.wars < 5);
+        const pointStyle = color => trend.map((m, i) => faded[i] ? color + '55' : color);
+        new Chart(document.getElementById('trendChart'), {
+            type: 'line',
+            data: {
+                labels: trend.map(m => m.month),
+                datasets: [
+                    { label: 'Triple rate', data: trend.map(m => m.triple_rate), borderColor: C.ours,
+                      backgroundColor: pointStyle(C.ours), borderWidth: 3, tension: 0.3, pointRadius: 4 },
+                    { label: 'Win rate', data: trend.map(m => m.win_rate), borderColor: C.win,
+                      backgroundColor: pointStyle(C.win), borderWidth: 2, tension: 0.3, pointRadius: 3 },
+                    { label: 'Attacks used', data: trend.map(m => m.usage), borderColor: C.blue,
+                      backgroundColor: pointStyle(C.blue), borderWidth: 2, borderDash: [5, 4], tension: 0.3,
+                      pointRadius: 3 },
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: { y: pct },
+                plugins: {
+                    tooltip: { callbacks: { footer: items => trend[items[0].dataIndex].wars + ' wars' } }
+                }
+            }
+        });
+
+        // Hit up / down
+        const ours = {{ d.th_diff | tojson }};
+        const bench = {{ bench.th_diff | tojson }};
+        const benchBy = Object.fromEntries(bench.map(r => [r.diff, r]));
+        new Chart(document.getElementById('thDiffChart'), {
+            type: 'bar',
+            data: {
+                labels: ours.map(r => r.label),
+                datasets: [
+                    { label: 'Us', data: ours.map(r => r.triple_rate), backgroundColor: C.ours },
+                    { label: 'All tracked clans', data: ours.map(r => (benchBy[r.diff] || {}).triple_rate),
+                      backgroundColor: C.bench },
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, scales: { y: pct },
+                plugins: {
+                    tooltip: { callbacks: { label: ctx => {
+                        const r = ctx.datasetIndex === 0 ? ours[ctx.dataIndex] : benchBy[ours[ctx.dataIndex].diff];
+                        return `${ctx.dataset.label}: ${ctx.parsed.y}% (${r ? r.attacks : 0} attacks)`;
+                    } } }
+                }
+            }
+        });
+
+        // Regular vs CWL
+        const types = {{ d.by_type | tojson }};
+        new Chart(document.getElementById('typeChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Win rate', 'Triple rate', 'Attacks used'],
+                datasets: [
+                    { label: `Regular (${types.regular.wars} wars)`, backgroundColor: C.blue,
+                      data: [types.regular.win_rate, types.regular.triple_rate, types.regular.usage] },
+                    { label: `CWL (${types.cwl.wars} wars)`, backgroundColor: C.ours,
+                      data: [types.cwl.win_rate, types.cwl.triple_rate, types.cwl.usage] },
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: pct } }
+        });
+
+        // Duration
+        const dur = {{ d.duration | tojson }};
+        new Chart(document.getElementById('durationChart'), {
+            type: 'bar',
+            data: {
+                labels: dur.map(r => r.label),
+                datasets: [
+                    { label: 'Triple', data: dur.map(r => r.triple_rate), backgroundColor: C.ours },
+                    { label: '0-1 stars', data: dur.map(r => r.fail_rate), backgroundColor: C.bad },
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, scales: { y: pct },
+                plugins: { tooltip: { callbacks: { footer: i => dur[i[0].dataIndex].attacks + ' attacks' } } }
+            }
+        });
+
+        // Matchup strength
+        const mu = {{ d.matchup | tojson }};
+        new Chart(document.getElementById('matchupChart'), {
+            type: 'bar',
+            data: {
+                labels: mu.map(r => r.label.replace(' (>0.5 TH)', '')),
+                datasets: [{ label: 'Win rate', data: mu.map(r => r.win_rate),
+                             backgroundColor: mu.map(r => r.win_rate >= 50 ? C.win : C.bad) }]
+            },
+            options: {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                scales: { x: pct },
+                plugins: { legend: { display: false },
+                           tooltip: { callbacks: { footer: i => mu[i[0].dataIndex].wars + ' wars' } } }
+            }
+        });
+
+        // Player scatter
+        const players = {{ d.players | tojson }};
+        new Chart(document.getElementById('playerScatter'), {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    data: players.map(p => ({ x: p.usage, y: p.avg_stars, p })),
+                    pointRadius: players.map(p => Math.max(4, Math.min(14, Math.sqrt(p.attacks) * 1.1))),
+                    backgroundColor: players.map(p => p.form === null ? '#9ca3af99'
+                        : p.form >= 5 ? '#4ade80cc' : p.form <= -5 ? '#f87171cc' : '#facc15cc'),
+                    borderColor: '#111', borderWidth: 1,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { ...pct, min: Math.max(0, Math.floor(Math.min(...players.map(p => p.usage)) / 10) * 10),
+                         title: { display: true, text: 'Attacks used' } },
+                    y: { min: 1.5, max: 3, title: { display: true, text: 'Avg stars per attack' } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => {
+                        const p = ctx.raw.p;
+                        return `${p.name} (TH${p.th}): ${p.avg_stars}★, ${p.triple_rate}% triples, ${p.usage}% used`;
+                    } } }
+                },
+                onClick: (e, els) => { if (els.length) window.location = players[els[0].index].link; }
+            }
+        });
+
+        // Sortable table
+        document.querySelectorAll('table.sortable th').forEach((th, col) => {
+            th.addEventListener('click', () => {
+                const table = th.closest('table'), body = table.tBodies[0];
+                const asc = th.dataset.sort !== 'asc';
+                table.querySelectorAll('th').forEach(h => delete h.dataset.sort);
+                th.dataset.sort = asc ? 'asc' : 'desc';
+                const val = tr => {
+                    const td = tr.children[col];
+                    if (th.dataset.type === 'text') return td.textContent.trim().toLowerCase();
+                    return parseFloat(td.dataset.v ?? td.textContent) || 0;
+                };
+                [...body.rows].sort((a, b) => (val(a) > val(b) ? 1 : val(a) < val(b) ? -1 : 0) * (asc ? 1 : -1))
+                    .forEach(r => body.appendChild(r));
+            });
+        });
+    </script>
+</body>
+
+</html>

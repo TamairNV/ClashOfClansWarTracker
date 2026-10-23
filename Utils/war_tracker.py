@@ -88,7 +88,7 @@ async def check_past_wars(client, db):
             try:
                 war_log = await client.get_war_log(Config.CLAN_TAG, limit=20)
                 for log_entry in war_log:
-                    if log_entry.opponent.tag == db_war['opponent_tag']:
+                    if log_entry.opponent and log_entry.opponent.tag == db_war['opponent_tag']:  # CWL log entries have no opponent
                         war_end = log_entry.end_time.time.replace(tzinfo=None)
                         if abs((war_end - db_war['end_time']).total_seconds()) < 86400: # 1 day tolerance
                             process_war_result(log_entry, db_war)

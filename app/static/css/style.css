@@ -628,3 +628,8 @@ body {
         grid-template-columns: 1fr;
     }
 }
+/* Let the nav wrap once there are more pages than fit on a phone */
+.nav-bar { flex-wrap: wrap; }
+@media (max-width: 600px) {
+    .nav-item { padding: 6px 9px; font-size: 1rem; }
+}

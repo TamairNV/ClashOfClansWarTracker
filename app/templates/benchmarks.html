@@ -27,6 +27,7 @@
         <a href="{{ url_for('main.clan_stats') }}" class="nav-item">Stats</a>
         <a href="{{ url_for('main.insights') }}" class="nav-item">Insights</a>
         <a href="{{ url_for('main.benchmarks_page') }}" class="nav-item active">Benchmarks</a>
+        <a href="{{ url_for('main.health') }}" class="nav-item">Health</a>
     </nav>
 
     {% set ranked = b.clans | selectattr('vs_expected') | sort(attribute='vs_expected', reverse=True) | list %}
@@ -62,7 +63,7 @@
                 <div class="kpi-sub">from our own war log</div>
             </div>
             <div class="kpi">
-                <div class="kpi-label">Average TH</div>
+                <div class="kpi-label">Average TH in war</div>
                 <div class="kpi-value">{{ ours.avg_th }}</div>
                 <div class="kpi-sub">field average {{ ((b.clans | sum(attribute='avg_th')) / (b.clans | length)) |
                     round(2) }}</div>
@@ -181,7 +182,7 @@
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                scales: { x: { title: { display: true, text: 'Average town hall in war' } },
+                scales: { x: { title: { display: true, text: 'Average town hall in war line-ups' } },
                           y: { title: { display: true, text: 'Avg stars per attack' } } },
                 plugins: { legend: { display: false },
                            tooltip: { callbacks: { label: ctx => `${ctx.raw.c.name}: TH ${ctx.raw.x}, ${ctx.raw.y}★` } } }

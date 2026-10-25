@@ -251,3 +251,11 @@ def insights():
 def benchmarks_page():
     from Utils.insights import benchmarks
     return render_template('benchmarks.html', b=benchmarks())
+
+
+@main.route('/health')
+def health():
+    from Utils.history import get_history, health_headlines, METRICS, CACHE_HOURS
+    data, building = get_history()
+    return render_template('health.html', h=data, building=building, metrics=METRICS,
+                           cache_hours=CACHE_HOURS, headlines=health_headlines(data) if data else [])
